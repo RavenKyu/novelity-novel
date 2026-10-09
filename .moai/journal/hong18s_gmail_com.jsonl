@@ -1,0 +1,56 @@
+{"ts":"2026-10-09T09:47:10Z","id":"nn-td3c","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"v0.1.0"}
+{"ts":"2026-10-09T09:49:30Z","id":"nn-l738","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"Admin 골격 v0.1.0"}
+{"ts":"2026-10-09T09:49:30Z","id":"nn-l738.zeb","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"디렉토리 구조 확정 + ARCHITECTURE/CONVENTIONS 작성"}
+{"ts":"2026-10-09T09:49:30Z","id":"nn-l738.1cn","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"nn-core-api-server: Echo 골격 + /api/healthz + Dockerfile"}
+{"ts":"2026-10-09T09:49:30Z","id":"nn-l738.7aa","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"nn-web-server: SvelteKit Tailwind flowbite-svelte 빈 admin 셸 + Dockerfile(nginx)"}
+{"ts":"2026-10-09T09:49:30Z","id":"nn-l738.aa5","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"docker-compose로 두 서비스 묶기"}
+{"ts":"2026-10-09T09:49:30Z","id":"nn-l738.1hw","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"검증: compose up 후 헬스체크와 화면 확인"}
+{"ts":"2026-10-09T09:49:35Z","id":"nn-l738.1cn","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"todo","to":"in_progress"}
+{"ts":"2026-10-09T09:50:53Z","id":"nn-l738.1cn","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"in_progress","to":"done","note":"Echo v5.3.1 골격, /api/healthz 테스트 통과, distroless 이미지 스모크 확인"}
+{"ts":"2026-10-09T09:50:53Z","id":"nn-l738.7aa","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"todo","to":"in_progress"}
+{"ts":"2026-10-09T09:52:31Z","id":"nn-l738.7aa","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"in_progress","to":"done","note":"SvelteKit SPA(adapter-static) + Tailwind v4 + flowbite-svelte 1.33.1 셸, check/lint/build 통과, nginx 이미지 빌드"}
+{"ts":"2026-10-09T09:52:31Z","id":"nn-l738.aa5","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"todo","to":"in_progress"}
+{"ts":"2026-10-09T09:52:41Z","id":"nn-l738.aa5","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"in_progress","to":"done","note":"docker-compose.yml: nn-core-api-server(내부 8080), nn-web-server(호스트 WEB_PORT 기본 8000)"}
+{"ts":"2026-10-09T09:52:41Z","id":"nn-l738.1hw","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"todo","to":"in_progress"}
+{"ts":"2026-10-09T09:53:48Z","id":"nn-l738.1hw","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"in_progress","to":"done","note":"compose up: /api/healthz 프록시 200, SPA fallback 200, Playwright로 데스크톱·모바일·사이드바·다크모드 확인"}
+{"ts":"2026-10-09T09:53:48Z","id":"nn-l738.zeb","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"todo","to":"in_progress"}
+{"ts":"2026-10-09T09:54:30Z","id":"nn-l738.zeb","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"in_progress","to":"done","note":"ARCHITECTURE/CONVENTIONS 작성, scripts/go 래퍼 추가 후 문서 명령 실행 확인"}
+{"ts":"2026-10-09T10:05:05Z","id":"nn-obt9","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"미미지를 받아서 상황이나 장면, 풍경, 분위기등을 글로 묘사하는 기능"}
+{"ts":"2026-10-09T13:14:06Z","id":"nn-c4tr","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"admin 셸을 argos 스타일로 변경 + 스타일 가이드 기록"}
+{"ts":"2026-10-09T13:14:10Z","id":"nn-c4tr","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"todo","to":"in_progress"}
+{"ts":"2026-10-09T13:16:01Z","id":"nn-c4tr","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"in_progress","to":"done","note":"argos 토큰·셸(Sidebar/Header/PageContent) 이식, DarkMode 제거, docs/STYLE.md 작성. check/lint/build, compose 화면(1440/900 hover/400) 확인"}
+{"ts":"2026-10-09T13:24:30Z","id":"nn-jk9v","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"Google 로그인"}
+{"ts":"2026-10-09T13:24:30Z","id":"nn-jk9v.lck","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"docker-compose에 MongoDB 추가 + core-api 연결"}
+{"ts":"2026-10-09T13:24:30Z","id":"nn-jk9v.z28","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"core-api: Google OAuth(OIDC) 로그인과 콜백"}
+{"ts":"2026-10-09T13:24:30Z","id":"nn-jk9v.ovg","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"core-api: Mongo 세션 + /api/auth/me, logout, 인증 미들웨어"}
+{"ts":"2026-10-09T13:24:30Z","id":"nn-jk9v.mze","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"web: /login 페이지 + 인증 가드 + 사이드바 사용자 메뉴"}
+{"ts":"2026-10-09T13:24:30Z","id":"nn-jk9v.ztp","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"문서: ARCHITECTURE/CONVENTIONS/.env.example + 설정 안내"}
+{"ts":"2026-10-09T13:24:30Z","id":"nn-jk9v.4qr","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"검증: 테스트 + compose로 실제 로그인 확인"}
+{"ts":"2026-10-09T13:25:30Z","id":"nn-jk9v.lck","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"todo","to":"in_progress"}
+{"ts":"2026-10-09T13:27:26Z","id":"nn-jk9v.lck","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"in_progress","to":"done","note":"mongo:8.0 + 볼륨 + healthcheck, healthz가 ping 반영(503). nginx resolver로 업스트림 재해석"}
+{"ts":"2026-10-09T13:27:26Z","id":"nn-jk9v.z28","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"todo","to":"in_progress"}
+{"ts":"2026-10-09T13:30:39Z","id":"nn-jk9v.z28","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"in_progress","to":"done","note":"OIDC code flow+PKCE+nonce, 가짜 IdP 테스트, 실제 Google discovery 리다이렉트 확인"}
+{"ts":"2026-10-09T13:30:39Z","id":"nn-jk9v.ovg","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"todo","to":"in_progress"}
+{"ts":"2026-10-09T13:30:39Z","id":"nn-jk9v.ovg","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"in_progress","to":"done","note":"Mongo users/sessions(해시, TTL), me/logout, RequireSession. 통합 테스트(MONGO_TEST_URI) 통과"}
+{"ts":"2026-10-09T13:30:39Z","id":"nn-jk9v.mze","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"todo","to":"in_progress"}
+{"ts":"2026-10-09T13:33:09Z","id":"nn-jk9v.mze","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"in_progress","to":"done","note":"/login(셸 없음, 오류 코드별 메시지), 인증 가드, UserMenu. Playwright로 리다이렉트·메뉴·로그아웃 확인"}
+{"ts":"2026-10-09T13:33:09Z","id":"nn-jk9v.ztp","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"todo","to":"in_progress"}
+{"ts":"2026-10-09T13:33:09Z","id":"nn-jk9v.ztp","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"in_progress","to":"done","note":"ARCHITECTURE(Mongo 스키마), CONVENTIONS, STYLE, .env.example, ADR-001"}
+{"ts":"2026-10-09T13:33:09Z","id":"nn-jk9v.4qr","kind":"note","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","text":"자동 검증 완료: go test(가짜 IdP+Mongo 통합), 실제 Google discovery 리다이렉트, 시드 세션으로 UI 가드·로그아웃. 남은 것: 사용자가 .env에 GOOGLE_CLIENT_ID/SECRET 넣은 뒤 실제 Google 계정 로그인"}
+{"ts":"2026-10-09T14:26:33Z","id":"nn-37bz","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"내 작품"}
+{"ts":"2026-10-09T14:26:33Z","id":"nn-05ka","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"자료창고"}
+{"ts":"2026-10-09T14:26:33Z","id":"nn-ij4q","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"타임라인"}
+{"ts":"2026-10-09T14:26:33Z","id":"nn-4euf","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"등장인물"}
+{"ts":"2026-10-09T14:26:33Z","id":"nn-6foy","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"장소"}
+{"ts":"2026-10-09T14:26:33Z","id":"nn-uoe2","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"문법검사기"}
+{"ts":"2026-10-09T14:26:33Z","id":"nn-60aj","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"작품 시작하기"}
+{"ts":"2026-10-09T14:26:33Z","id":"nn-kh6d","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"완급조절 도우미"}
+{"ts":"2026-10-09T14:34:29Z","id":"nn-6ldx","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"내보내기"}
+{"ts":"2026-10-09T14:34:29Z","id":"nn-9wkg","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"원고 구조 편집"}
+{"ts":"2026-10-09T14:58:42Z","id":"nn-bpqi","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"CI·e2e 도입: PR 검증 워크플로, Playwright e2e, pre-commit 훅, 이미지 빌드(푸시 보류)"}
+{"ts":"2026-10-09T14:58:42Z","id":"nn-bpqi","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"todo","to":"in_progress"}
+{"ts":"2026-10-09T15:01:38Z","id":"nn-bpqi","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"in_progress","to":"done","note":"verify-pull-request/e2e/build-images 워크플로(actionlint 통과, 푸시 주석), Playwright e2e 7건 통과, pre-commit 훅 3케이스 확인, CONVENTIONS·ARCHITECTURE 갱신"}
+{"ts":"2026-10-09T15:10:14Z","id":"nn-jk9v.4qr","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"todo","to":"in_progress"}
+{"ts":"2026-10-09T15:10:14Z","id":"nn-jk9v.4qr","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"in_progress","to":"done","note":"사용자 확인: 실제 Google 계정(hong18s@gmail.com) 로그인 성공(2026-10-09 13:49 세션 생성). 자동 검증은 go test·e2e로 완료"}
+{"ts":"2026-10-09T15:20:18Z","id":"nn-1sgn","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"집필 일정 관리"}
+{"ts":"2026-10-09T15:20:18Z","id":"nn-1sgn","kind":"note","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","text":"moai web server 버전 출시 대기"}
