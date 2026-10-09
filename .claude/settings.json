@@ -1,0 +1,13 @@
+{
+  "extraKnownMarketplaces": {
+    "init-project": {
+      "source": {
+        "source": "github",
+        "repo": "ravenkyu/init-project"
+      }
+    }
+  },
+  "enabledPlugins": {
+    "init-project@init-project": true
+  }
+}

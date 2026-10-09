@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "description": "Planted by moai. Edit it by hand and the next `moai skill install` overwrites it.",
+  "name": "moai-nn-d1c7",
+  "owner": {
+    "name": "moai"
+  },
+  "plugins": [
+    {
+      "category": "productivity",
+      "description": "This repository's work, rules and board.",
+      "name": "moai",
+      "source": "./"
+    }
+  ]
+}

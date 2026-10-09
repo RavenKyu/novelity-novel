@@ -1,0 +1,13 @@
+# moai
+.moai/lock
+.moai/*.tmp.*
+/.worktrees/
+/.claude/worktrees/
+
+# env
+.env
+
+# node (repo tooling)
+node_modules/
+# test output
+/artifacts/
