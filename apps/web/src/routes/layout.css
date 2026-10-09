@@ -1,0 +1,97 @@
+@import 'tailwindcss';
+
+@plugin 'flowbite/plugin';
+
+@source '../../node_modules/flowbite-svelte/dist';
+@source '../../node_modules/flowbite-svelte-icons/dist';
+
+/* Design tokens — borrowed from argos (see docs/STYLE.md). Use these via
+   bg-[var(--color-…)] etc. rather than raw Tailwind palette colors. */
+@theme {
+	/* Sidebar & Header (dark chrome) */
+	--color-sidebar: #1e2028;
+	--color-sidebar-hover: rgba(255, 255, 255, 0.06);
+	--color-sidebar-active: rgba(99, 132, 255, 0.14);
+	--color-sidebar-border: rgba(255, 255, 255, 0.08);
+	--color-sidebar-text: rgba(230, 230, 245, 0.65);
+	--color-sidebar-text-active: #e6e6f5;
+
+	--color-header: #1e2028;
+	--color-header-border: rgba(255, 255, 255, 0.08);
+
+	/* Body */
+	--color-body: #f4f5f7;
+
+	/* Content card */
+	--color-surface: #ffffff;
+	--color-surface-hover: #fafbfc;
+	--color-surface-border: #e2e5ea;
+
+	/* Elevated surface (dropdown, toast, popover) */
+	--color-bg-elevated: #ffffff;
+	--color-border: #e2e5ea;
+
+	/* Text */
+	--color-text-primary: #1a1c23;
+	--color-text-secondary: #5a6070;
+	--color-text-dimmed: #8b90a0;
+
+	/* Accent */
+	--color-accent: #3871e0;
+	--color-accent-hover: #2c5dbd;
+	--color-accent-subtle: rgba(56, 113, 224, 0.08);
+
+	/* Status */
+	--color-success: #1a7f37;
+	--color-success-bg: #dafbe1;
+	--color-error: #cf222e;
+	--color-error-bg: #ffebe9;
+	--color-warning: #9a6700;
+	--color-warning-bg: #fff8c5;
+
+	/* Input */
+	--color-input-border: #d0d4dc;
+	--color-input-focus: #3871e0;
+
+	/* flowbite-svelte `primary` scale, centered on the accent so its components match */
+	--color-primary-50: #eef3fd;
+	--color-primary-100: #dce7fb;
+	--color-primary-200: #b9cff7;
+	--color-primary-300: #8fb1f0;
+	--color-primary-400: #5f8de8;
+	--color-primary-500: #3871e0;
+	--color-primary-600: #2c5dbd;
+	--color-primary-700: #244c9a;
+	--color-primary-800: #1c3b78;
+	--color-primary-900: #142a56;
+
+	/* Sizing */
+	--sidebar-width-expanded: 260px;
+	--sidebar-width-collapsed: 56px;
+	--sidebar-width: var(--sidebar-width-expanded);
+	--header-height: 44px;
+}
+
+/* Narrow window: sidebar shrinks to icon width; hovering expands it as an overlay. */
+@media (max-width: 1279px) {
+	:root {
+		--sidebar-width: var(--sidebar-width-collapsed);
+	}
+}
+
+html,
+body {
+	margin: 0;
+	padding: 0;
+	background-color: var(--color-body);
+	color: var(--color-text-primary);
+	font-family:
+		system-ui,
+		-apple-system,
+		'Segoe UI',
+		Roboto,
+		sans-serif;
+	font-size: 14px;
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+}
