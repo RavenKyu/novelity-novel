@@ -1,0 +1,104 @@
+# PR verification gate (required check).
+#
+# Modeled on aplus-dev-studio-desktop's verify-pull-request.yml. The local pre-commit
+# hook only runs checks for what is staged, has to be installed per clone
+# (`npm run hooks:install`) and can be bypassed — this is the gate that can't.
+#
+# `pull_request` checks out the merge of the PR into its base, not the PR head, so
+# two PRs that are green on their own but break together are caught here.
+#
+# e2e is deliberately not part of this gate: it needs the whole compose stack and a
+# browser, so it is slower and flakier. It runs in e2e.yml as a separate, non-required
+# check — a flaky required gate teaches people to bypass it.
+name: Verify pull request
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+# Cancel superseded runs of the same PR to keep the queue short.
+concurrency:
+  group: verify-pr-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  core-api:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      # Store integration tests run against a real MongoDB (skipped when MONGO_TEST_URI is unset).
+      mongodb:
+        image: mongo:8.0
+        env:
+          MONGO_INITDB_ROOT_USERNAME: novelity
+          MONGO_INITDB_ROOT_PASSWORD: novelity-dev
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.adminCommand(\"ping\").ok'"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: apps/core-api
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/core-api/go.mod
+          cache-dependency-path: apps/core-api/go.sum
+
+      - name: gofmt
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "::error::gofmt needed on:"; echo "$unformatted"; exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test
+        env:
+          MONGO_TEST_URI: mongodb://novelity:novelity-dev@localhost:27017/?authSource=admin
+        run: go test -race ./...
+
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check (svelte-check)
+        run: npm run check
+
+      - name: Format check (prettier)
+        run: npm run lint
+
+      - name: Build
+        run: npm run build

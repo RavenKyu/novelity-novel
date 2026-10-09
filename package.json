@@ -1,0 +1,14 @@
+{
+	"name": "novelity-novel",
+	"private": true,
+	"description": "Repo-level tooling: e2e tests and git hooks. Apps live in apps/*.",
+	"type": "module",
+	"scripts": {
+		"test:e2e": "playwright test --config tests/e2e/playwright.config.ts",
+		"test:e2e:install": "playwright install chromium",
+		"hooks:install": "git config core.hooksPath .githooks"
+	},
+	"devDependencies": {
+		"@playwright/test": "1.63.0"
+	}
+}

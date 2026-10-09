@@ -1,0 +1,68 @@
+#!/usr/bin/env bash
+# Pre-commit gate: runs only the checks related to what is staged.
+#
+# Modeled on aplus-dev-studio-desktop's hook. The full suite belongs to CI
+# (.github/workflows/verify-pull-request.yml); locally we keep commits fast:
+#   - apps/core-api staged → go vet + go test (store tests need MONGO_TEST_URI, skipped otherwise)
+#   - apps/web staged      → npm run check + npm run lint
+#   - e2e                  → only staged tests/e2e/*.spec.ts plus E2E_SPEC_FILES, never the whole suite
+#
+# Enable once per clone/worktree: npm run hooks:install
+# Bypass: SKIP_HOOKS=1 git commit …  (or SKIP_E2E=1 to skip only e2e). Say why in the message.
+#
+# The hook checks the working tree, not the staged snapshot. Don't `git stash` unstaged
+# changes away to work around that — stash is shared across worktrees.
+set -uo pipefail
+
+if [ "${SKIP_HOOKS:-0}" = "1" ]; then
+	echo "pre-commit: SKIP_HOOKS=1 — skipping all checks."
+	exit 0
+fi
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root" || exit 1
+staged="$(git diff --cached --name-only --diff-filter=ACMR)"
+
+fail() {
+	echo "pre-commit: $1" >&2
+	echo "pre-commit: to bypass on purpose: SKIP_HOOKS=1 git commit …" >&2
+	exit 1
+}
+
+if printf '%s\n' "$staged" | grep -qE '^apps/core-api/'; then
+	echo "pre-commit: core-api changed → go vet, go test"
+	(cd apps/core-api && ../../scripts/go vet ./... && ../../scripts/go test ./...) || fail "core-api checks failed"
+fi
+
+if printf '%s\n' "$staged" | grep -qE '^apps/web/'; then
+	[ -d apps/web/node_modules ] || fail "apps/web/node_modules missing — run: (cd apps/web && npm ci)"
+	echo "pre-commit: web changed → svelte-check, prettier"
+	(cd apps/web && npm run --silent check && npm run --silent lint) || fail "web checks failed"
+fi
+
+if [ "${SKIP_E2E:-0}" = "1" ]; then
+	echo "pre-commit: SKIP_E2E=1 — skipping e2e."
+	exit 0
+fi
+
+specs=()
+while IFS= read -r file; do
+	case "$file" in tests/e2e/*.spec.ts) specs+=("$file") ;; esac
+done <<< "$staged"
+for file in ${E2E_SPEC_FILES:-}; do
+	case "$file" in
+	tests/e2e/*.spec.ts) specs+=("$file") ;;
+	*) fail "E2E_SPEC_FILES takes tests/e2e/*.spec.ts paths only" ;;
+	esac
+done
+if [ "${#specs[@]}" -eq 0 ]; then
+	if printf '%s\n' "$staged" | grep -qE '^apps/'; then
+		echo "pre-commit: no e2e spec selected — run related ones with E2E_SPEC_FILES=\"tests/e2e/<name>.spec.ts\" if behavior changed."
+	fi
+	exit 0
+fi
+
+[ -d node_modules ] || fail "node_modules missing — run: npm ci && npm run test:e2e:install"
+echo "pre-commit: running ${#specs[@]} selected e2e spec(s) against the compose stack"
+echo "pre-commit: (rebuild first if app code changed: docker compose up -d --build)"
+npx playwright test --config tests/e2e/playwright.config.ts "${specs[@]}" || fail "e2e failed. Reproduce: npx playwright test --config tests/e2e/playwright.config.ts ${specs[*]}"
