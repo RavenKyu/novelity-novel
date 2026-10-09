@@ -1,0 +1,49 @@
+name: novelity-novel
+
+services:
+  nn-mongodb:
+    image: mongo:8.0
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_ROOT_USER:-novelity}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-novelity-dev}
+    ports:
+      # Host-local only, for mongosh/Compass.
+      - "127.0.0.1:${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  nn-core-api-server:
+    build: ./apps/core-api
+    image: nn-core-api-server:local
+    environment:
+      PORT: "8080"
+      MONGO_URI: mongodb://${MONGO_ROOT_USER:-novelity}:${MONGO_ROOT_PASSWORD:-novelity-dev}@nn-mongodb:27017/?authSource=admin
+      MONGO_DB: novelity
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8000}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      SESSION_TTL: ${SESSION_TTL:-168h}
+    expose:
+      - "8080"
+    depends_on:
+      nn-mongodb:
+        condition: service_healthy
+    restart: unless-stopped
+
+  nn-web-server:
+    build: ./apps/web
+    image: nn-web-server:local
+    ports:
+      - "${WEB_PORT:-8000}:80"
+    depends_on:
+      - nn-core-api-server
+    restart: unless-stopped
+
+volumes:
+  mongo-data:
