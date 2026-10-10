@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+# Local development: MongoDB in docker compose, core-api and web as host processes
+# that reload on file changes.
+#   scripts/dev       both, one terminal (prefixed output, Ctrl-C stops both)
+#   scripts/dev api   core-api only: air rebuilds and restarts it on *.go changes (:8080)
+#   scripts/dev web   web only: vite dev server with HMR (:${WEB_PORT:-8000}, /api → :8080)
+# Needs Docker, Go (brew install go) and Node. Reads .env from the repo root.
+set -euo pipefail
+
+AIR_VERSION=v1.67.4
+
+root="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$root"
+
+if [ -f .env ]; then
+	set -a
+	. ./.env
+	set +a
+fi
+# core-api runs on the host, so it reaches MongoDB through the published port.
+export MONGO_URI="${MONGO_URI:-mongodb://${MONGO_ROOT_USER:-novelity}:${MONGO_ROOT_PASSWORD:-novelity-dev}@localhost:${MONGO_PORT:-27017}/?authSource=admin}"
+
+fail() {
+	echo "dev: $1" >&2
+	exit 1
+}
+
+case "${1:-all}" in
+api)
+	command -v go >/dev/null 2>&1 || fail "go not found — install it: brew install go"
+	docker compose up -d --wait nn-mongodb
+	# air is pinned and installed once per version into the user cache, outside the repo.
+	air_dir="${XDG_CACHE_HOME:-$HOME/.cache}/nn-dev/air-$AIR_VERSION"
+	[ -x "$air_dir/air" ] || GOBIN="$air_dir" go install "github.com/air-verse/air@$AIR_VERSION"
+	cd apps/core-api
+	exec "$air_dir/air"
+	;;
+web)
+	[ -d apps/web/node_modules ] || fail "apps/web/node_modules missing — run: (cd apps/web && npm ci)"
+	cd apps/web
+	exec npm run dev
+	;;
+all)
+	[ -x node_modules/.bin/concurrently ] || fail "node_modules missing — run: npm ci"
+	exec node_modules/.bin/concurrently --kill-others --names api,web --prefix-colors blue,magenta \
+		"scripts/dev api" "scripts/dev web"
+	;;
+*)
+	echo "usage: scripts/dev [api|web]" >&2
+	exit 2
+	;;
+esac

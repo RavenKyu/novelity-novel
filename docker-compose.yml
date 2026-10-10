@@ -18,7 +18,12 @@ services:
       retries: 10
     restart: unless-stopped
 
+  # The containerized app is opt-in (profile "app"): CI e2e and production-like checks.
+  # Day-to-day development runs core-api and web on the host with live reload (scripts/dev),
+  # so a plain `docker compose up` starts MongoDB only.
+  #   docker compose --profile app up -d --build
   nn-core-api-server:
+    profiles: [app]
     build: ./apps/core-api
     image: nn-core-api-server:local
     environment:
@@ -37,6 +42,7 @@ services:
     restart: unless-stopped
 
   nn-web-server:
+    profiles: [app]
     build: ./apps/web
     image: nn-web-server:local
     ports:

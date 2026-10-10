@@ -7,6 +7,9 @@
 # env
 .env
 
+# core-api live-reload build output (air)
+/apps/core-api/tmp/
+
 # node (repo tooling)
 node_modules/
 # test output

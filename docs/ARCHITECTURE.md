@@ -1,10 +1,10 @@
 # Architecture
 
-> 마지막 갱신: 2026-10-09
+> 마지막 갱신: 2026-10-10
 
 ## 시스템 개요
 
-Novelity 관리자(admin) 서비스다. 컨테이너 세 개를 docker-compose로 묶는다.
+Novelity 관리자(admin) 서비스다. 컨테이너 세 개를 docker-compose로 묶는다. core-api와 web은 compose `app` 프로필에 속한다. 그래서 개발 중에는 MongoDB만 컨테이너로 띄우고, 두 서비스는 호스트에서 live reload로 실행한다(`scripts/dev`, CONVENTIONS.md의 개발 환경).
 
 - `nn-web-server`: nginx가 SvelteKit SPA 빌드 결과를 서빙하고, `/api/*` 요청은 core-api로 프록시한다.
 - `nn-core-api-server`: Go 언어와 Echo v5로 만든 HTTP API다. compose 내부망에만 노출한다.
@@ -29,9 +29,10 @@ Novelity 관리자(admin) 서비스다. 컨테이너 세 개를 docker-compose�
 | web 공용 | 컴포넌트·자산, 디자인 토큰(`routes/layout.css`), 세션 상태(`auth.svelte.ts`) | apps/web/src/lib |
 | web 인증 가드 | `/api/auth/me` 확인 후 미로그인 시 `/login`(셸 없는 화면)으로 보냄 | apps/web/src/routes/+layout.svelte |
 | web 서빙 | 정적 서빙, SPA fallback, `/api` 프록시 | apps/web/nginx.conf |
-| 오케스트레이션 | 서비스 정의·포트 | docker-compose.yml |
+| 오케스트레이션 | 서비스 정의·포트, core-api·web은 `app` 프로필 | docker-compose.yml |
+| 개발 실행 | MongoDB(compose) + core-api(air) + web(vite dev) 실행, `.env` 로딩 | scripts/dev, apps/core-api/.air.toml |
 | 개발 도구 | Go 툴체인 래퍼(로컬 go 또는 Docker, host 네트워크) | scripts/go |
-| e2e | compose 스택 대상 Playwright, Mongo 세션 시드 fixture | tests/e2e, package.json(루트 도구 전용) |
+| e2e | 실행 중인 앱(개발 서버 또는 `app` 프로필) 대상 Playwright, Mongo 세션 시드 fixture | tests/e2e, package.json(루트 도구 전용) |
 | 검증 자동화 | pre-commit 훅, GitHub Actions(PR 검증·e2e·이미지 빌드) | .githooks, .github/workflows |
 
 - web은 SvelteKit `adapter-static`(fallback `index.html`)과 `ssr = false` 설정으로 클라이언트 전용 SPA로 빌드한다.
