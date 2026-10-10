@@ -1,0 +1,125 @@
+#!/usr/bin/env bash
+# Release helpers for .github/workflows/prepare-release.yml and publish-release.yml.
+# One version for the whole repo: git tag vX.Y.Z, mirrored in apps/web/package.json.
+#
+#   scripts/release version <auto|patch|minor|major> [target]
+#       Next version, as GITHUB_OUTPUT lines: version=X.Y.Z, previous=<last tag or empty>, level=…
+#       auto picks the level from the labels of PRs merged into develop since the last tag:
+#       breaking → major (minor before 1.0), feature → minor, otherwise patch.
+#       Without any tag, the first release is the version in apps/web/package.json.
+#   scripts/release changelog <X.Y.Z> <notes.md>
+#       Prepend a "## vX.Y.Z — date (KST)" section built from GitHub's generated notes to CHANGELOG.md.
+#   scripts/release notes <X.Y.Z>
+#       Print that version's CHANGELOG.md section (the GitHub Release body).
+set -euo pipefail
+
+cd "$(dirname "$0")/.."
+
+fail() {
+	echo "release: $1" >&2
+	exit 1
+}
+
+latest_tag() {
+	git tag --list 'v[0-9]*.[0-9]*.[0-9]*' --sort=-v:refname | head -n 1
+}
+
+# bump <X.Y.Z> <patch|minor|major>
+bump() {
+	local major minor patch
+	IFS=. read -r major minor patch <<<"$1"
+	case "$2" in
+	major) echo "$((major + 1)).0.0" ;;
+	minor) echo "$major.$((minor + 1)).0" ;;
+	patch) echo "$major.$minor.$((patch + 1))" ;;
+	*) fail "unknown level: $2" ;;
+	esac
+}
+
+# auto_level <previous tag> <target> <current major>
+auto_level() {
+	local prs labels
+	prs=$(gh pr list --base develop --state merged --limit 500 --json mergeCommit,labels \
+		--jq '.[] | select(.mergeCommit != null) | "\(.mergeCommit.oid) \([.labels[].name] | join(","))"') ||
+		fail "could not list merged PRs"
+	# Labels of the PRs whose merge commit is in previous..target.
+	labels=$(while read -r sha names; do
+		[ -n "$sha" ] || continue
+		git merge-base --is-ancestor "$sha" "$2" 2>/dev/null || continue
+		git merge-base --is-ancestor "$sha" "$1" 2>/dev/null && continue
+		echo "$names"
+	done <<<"$prs" | tr ',' '\n')
+	if grep -qx breaking <<<"$labels"; then
+		[ "$3" -ge 1 ] && echo major || echo minor
+	elif grep -qx feature <<<"$labels"; then
+		echo minor
+	else
+		echo patch
+	fi
+}
+
+cmd_version() {
+	local requested="${1:-auto}" target="${2:-HEAD}" previous next level
+	case "$requested" in auto | patch | minor | major) ;; *) fail "bump must be auto, patch, minor or major" ;; esac
+	previous=$(latest_tag)
+	if [ -z "$previous" ]; then
+		next=$(node -p "require('./apps/web/package.json').version")
+		level=initial
+		if [ "$requested" != auto ]; then
+			next=$(bump "$next" "$requested")
+			level=$requested
+		fi
+	else
+		[ -n "$(git rev-list "$previous..$target")" ] || fail "nothing to release: no commits since $previous"
+		level=$requested
+		if [ "$level" = auto ]; then
+			level=$(auto_level "$previous" "$target" "$(cut -d. -f1 <<<"${previous#v}")")
+		fi
+		next=$(bump "${previous#v}" "$level")
+	fi
+	[[ $next =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || fail "not a version: $next"
+	git rev-parse -q --verify "refs/tags/v$next" >/dev/null && fail "tag v$next already exists"
+	echo "version=$next"
+	echo "previous=$previous"
+	echo "level=$level"
+}
+
+cmd_changelog() {
+	local version="$1" notes="$2" section
+	[ -f "$notes" ] || fail "notes file not found: $notes"
+	# GitHub's notes: drop the generator comment and "What's Changed", nest the rest under the version.
+	section=$(
+		printf '## v%s — %s\n\n' "$version" "$(TZ=Asia/Seoul date +%Y-%m-%d)"
+		sed -e '/^<!-- Release notes generated/d' -e "/^## What's Changed/d" -e 's/^## /### /' "$notes" |
+			cat -s | sed -e '/./,$!d'
+	)
+	[ -f CHANGELOG.md ] || printf '# Changelog\n' >CHANGELOG.md
+	grep -q "^## v$version " CHANGELOG.md && fail "CHANGELOG.md already has v$version"
+	# Insert before the first existing version section, after the file header.
+	# (ENVIRON, not -v: awk would interpret backslashes in the notes.)
+	SECTION="$section" awk '
+		!done && /^## v/ { print ENVIRON["SECTION"]; print ""; done = 1 }
+		{ print }
+		END { if (!done) { print ""; print ENVIRON["SECTION"] } }
+	' CHANGELOG.md >CHANGELOG.md.tmp
+	mv CHANGELOG.md.tmp CHANGELOG.md
+}
+
+cmd_notes() {
+	local version="$1"
+	awk -v head="## v$version " '
+		index($0, head) == 1 { found = 1; next }
+		found && /^## v/ { exit }
+		found { print }
+	' CHANGELOG.md | sed -e '/./,$!d'
+}
+
+case "${1:-}" in
+version) shift && cmd_version "$@" ;;
+changelog) shift && cmd_changelog "$@" ;;
+notes) shift && cmd_notes "$@" ;;
+*)
+	echo "usage: scripts/release version <auto|patch|minor|major> [target] | changelog <X.Y.Z> <notes.md> | notes <X.Y.Z>" >&2
+	exit 2
+	;;
+esac

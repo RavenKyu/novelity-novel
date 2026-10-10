@@ -51,14 +51,37 @@ core-api 명령은 `scripts/go`로 실행한다. 로컬에 `go`가 있으면 그
 
 | 워크플로 | 트리거 | 내용 | 필수 여부 |
 |----------|--------|------|-----------|
-| `verify-pull-request.yml` | main·develop 대상 PR, main·develop push | core-api: gofmt, vet, `go test -race`(Mongo 서비스 컨테이너로 store 테스트 포함) · web: npm ci, check, lint, build | 필수 게이트로 지정한다 |
-| `e2e.yml` | main 대상 PR, 수동 | `COMPOSE_PROFILES=app`으로 `docker compose up --build --wait` → Playwright 전체 실행. 실패 시 trace와 리포트를 업로드한다 | 필수 아님 |
-| `build-images.yml` | main push, `v*` 태그, 수동 | 두 서비스 이미지를 빌드만 한다. 레지스트리가 없어 로그인·푸시는 주석 처리했다. 활성화 방법은 파일 머리말에 있다 | — |
+| `verify-pull-request.yml` | main·develop 대상 PR, main·develop push, 수동 | core-api: gofmt, vet, `go test -race`(Mongo 서비스 컨테이너로 store 테스트 포함) · web: npm ci, check, lint, build | 필수 게이트로 지정한다 |
+| `e2e.yml` | main 대상 PR, 수동(릴리스 PR은 prepare-release가 실행) | `COMPOSE_PROFILES=app`으로 `docker compose up --build --wait` → Playwright 전체 실행. 실패 시 trace와 리포트를 업로드한다 | 필수 아님 |
+| `build-images.yml` | main push, `v*` 태그, 수동(릴리스 태그는 publish-release가 실행) | 두 서비스 이미지를 빌드만 한다. 레지스트리가 없어 로그인·푸시는 주석 처리했다. 활성화 방법은 파일 머리말에 있다 | — |
+| `prepare-release.yml` | 수동(Actions → Prepare release) | 버전 계산 → `release/vX.Y.Z` 브랜치에 bump·CHANGELOG 커밋 → main 대상 릴리스 PR 생성, 검증·e2e 실행 | — |
+| `publish-release.yml` | 릴리스 PR 병합 | 태그·GitHub Release 생성, 이미지 빌드 실행, main → develop 동기화 PR 자동 병합 | — |
 
 - PR 게이트는 PR head가 아니라 base와 병합한 결과를 검사한다. 각자는 통과하지만 합치면 깨지는 경우를 이 단계에서 잡는다.
 - e2e는 필수 게이트에서 뺐다. 스택 전체와 브라우저가 필요해 느리고 불안정할 수 있는데, 불안정한 필수 게이트는 우회를 습관으로 만들기 때문이다.
 - 브랜치 규칙(Settings → Rules → Rulesets, `main·develop: PR only …`): main과 develop은 PR로만 바꿀 수 있고, 삭제와 force push를 막는다. 필수 검사는 `Verify pull request`의 `core-api`와 `web`이다. 승인 리뷰 수는 0이고 우회 계정은 없다.
-- 작업 흐름: 기능 브랜치 → develop 대상 PR → (릴리스) develop → main PR. e2e는 main 대상 PR에서만 돌린다.
+- 작업 흐름: 기능 브랜치 → develop 대상 PR → (릴리스) `Prepare release`가 만든 release PR → main. e2e는 main 대상 PR에서만 돌린다.
+
+## 릴리스
+
+저장소 전체가 버전 하나를 쓴다. 태그는 `vX.Y.Z`이고, `apps/web/package.json`의 version(화면의 `__APP_VERSION__`)이 같은 값을 따른다. 변경 내역은 `CHANGELOG.md`와 GitHub Release에 남는다.
+
+1. develop 대상 PR에는 라벨을 하나 붙인다. 라벨이 CHANGELOG 분류와 자동 bump를 정한다(`.github/release.yml`, `scripts/release`). PR 제목이 그대로 CHANGELOG 항목이 되므로 변경 내용을 알 수 있게 쓴다.
+
+   | 라벨 | auto bump | CHANGELOG 분류 |
+   |------|-----------|----------------|
+   | `breaking` | major (1.0 전에는 minor) | 호환성 변경 |
+   | `feature` | minor | 새 기능 |
+   | `fix` | patch | 버그 수정 |
+   | `chore` 또는 없음 | patch | 기타 |
+   | `release` | — | 제외(릴리스·동기화 PR 전용) |
+
+2. Actions → **Prepare release** → Run workflow(`auto` 또는 patch·minor·major). 지난 태그 이후 develop을 기준으로 `release/vX.Y.Z` 브랜치와 main 대상 릴리스 PR이 만들어진다. 태그가 없으면 첫 릴리스는 `apps/web/package.json`의 버전이다.
+3. 릴리스 PR에서 버전과 CHANGELOG를 확인한다. 고칠 내용은 그 release 브랜치에 push한다.
+4. 릴리스 PR을 **merge commit**으로 병합한다(squash·rebase 금지). 그러면 publish-release가 태그와 GitHub Release를 만들고, 이미지 빌드를 실행하고, main → develop 동기화 PR을 연다. 동기화 PR은 검사가 통과하면 자동 병합된다.
+
+- Action이 `GITHUB_TOKEN`으로 만든 PR·push·태그는 다른 워크플로를 실행시키지 않는다. 그래서 검증·e2e·이미지 빌드는 workflow_dispatch로 직접 실행한다.
+- 저장소 설정 "Allow GitHub Actions to create and approve pull requests"와 "Allow auto-merge"가 켜져 있어야 한다.
 
 ## 명명·문서 컨벤션
 

@@ -1,6 +1,6 @@
 # Architecture
 
-> 마지막 갱신: 2026-10-10
+> 마지막 갱신: 2026-10-11
 
 ## 시스템 개요
 
@@ -34,6 +34,7 @@ Novelity 관리자(admin) 서비스다. 컨테이너 세 개를 docker-compose�
 | 개발 도구 | Go 툴체인 래퍼(로컬 go 또는 Docker, host 네트워크) | scripts/go |
 | e2e | 실행 중인 앱(개발 서버 또는 `app` 프로필) 대상 Playwright, Mongo 세션 시드 fixture | tests/e2e, package.json(루트 도구 전용) |
 | 검증 자동화 | pre-commit 훅, GitHub Actions(PR 검증·e2e·이미지 빌드) | .githooks, .github/workflows |
+| 릴리스 자동화 | 버전 계산·CHANGELOG(라벨 기반), 릴리스 PR 생성, 태그·GitHub Release·develop 동기화 | scripts/release, .github/release.yml, .github/workflows/{prepare,publish}-release.yml, CHANGELOG.md |
 
 - web은 SvelteKit `adapter-static`(fallback `index.html`)과 `ssr = false` 설정으로 클라이언트 전용 SPA로 빌드한다.
 - UI 컴포넌트는 flowbite-svelte와 flowbite-svelte-icons를 쓰고, 스타일은 Tailwind v4로 처리한다. 겉모양은 argos에서 차용한 디자인 토큰을 따른다(docs/STYLE.md).
