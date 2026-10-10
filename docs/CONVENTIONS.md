@@ -51,13 +51,14 @@ core-api 명령은 `scripts/go`로 실행한다. 로컬에 `go`가 있으면 그
 
 | 워크플로 | 트리거 | 내용 | 필수 여부 |
 |----------|--------|------|-----------|
-| `verify-pull-request.yml` | main 대상 PR, main push | core-api: gofmt, vet, `go test -race`(Mongo 서비스 컨테이너로 store 테스트 포함) · web: npm ci, check, lint, build | 필수 게이트로 지정한다 |
+| `verify-pull-request.yml` | main·develop 대상 PR, main·develop push | core-api: gofmt, vet, `go test -race`(Mongo 서비스 컨테이너로 store 테스트 포함) · web: npm ci, check, lint, build | 필수 게이트로 지정한다 |
 | `e2e.yml` | main 대상 PR, 수동 | `COMPOSE_PROFILES=app`으로 `docker compose up --build --wait` → Playwright 전체 실행. 실패 시 trace와 리포트를 업로드한다 | 필수 아님 |
 | `build-images.yml` | main push, `v*` 태그, 수동 | 두 서비스 이미지를 빌드만 한다. 레지스트리가 없어 로그인·푸시는 주석 처리했다. 활성화 방법은 파일 머리말에 있다 | — |
 
 - PR 게이트는 PR head가 아니라 base와 병합한 결과를 검사한다. 각자는 통과하지만 합치면 깨지는 경우를 이 단계에서 잡는다.
 - e2e는 필수 게이트에서 뺐다. 스택 전체와 브라우저가 필요해 느리고 불안정할 수 있는데, 불안정한 필수 게이트는 우회를 습관으로 만들기 때문이다.
-- 아직 GitHub 원격 저장소가 없어서 워크플로는 push한 뒤부터 동작한다. 필수 체크는 Settings → Branches(또는 Rulesets)에서 `Verify pull request`의 두 잡을 지정한다.
+- 브랜치 규칙(Settings → Rules → Rulesets, `main·develop: PR only …`): main과 develop은 PR로만 바꿀 수 있고, 삭제와 force push를 막는다. 필수 검사는 `Verify pull request`의 `core-api`와 `web`이다. 승인 리뷰 수는 0이고 우회 계정은 없다.
+- 작업 흐름: 기능 브랜치 → develop 대상 PR → (릴리스) develop → main PR. e2e는 main 대상 PR에서만 돌린다.
 
 ## 명명·문서 컨벤션
 
