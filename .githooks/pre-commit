@@ -5,7 +5,8 @@
 # (.github/workflows/verify-pull-request.yml); locally we keep commits fast:
 #   - apps/core-api staged → go vet + go test (store tests need MONGO_TEST_URI, skipped otherwise)
 #   - apps/web staged      → npm run check + npm run lint
-#   - e2e                  → only staged tests/e2e/*.spec.ts plus E2E_SPEC_FILES, never the whole suite
+#   - e2e                  → only staged tests/e2e/*.spec.ts plus E2E_SPEC_FILES, never the whole suite,
+#                            against the running app (npm run dev)
 #
 # Enable once per clone/worktree: npm run hooks:install
 # Bypass: SKIP_HOOKS=1 git commit …  (or SKIP_E2E=1 to skip only e2e). Say why in the message.
@@ -63,6 +64,6 @@ if [ "${#specs[@]}" -eq 0 ]; then
 fi
 
 [ -d node_modules ] || fail "node_modules missing — run: npm ci && npm run test:e2e:install"
-echo "pre-commit: running ${#specs[@]} selected e2e spec(s) against the compose stack"
-echo "pre-commit: (rebuild first if app code changed: docker compose up -d --build)"
+echo "pre-commit: running ${#specs[@]} selected e2e spec(s) against the running app"
+echo "pre-commit: (start it first if needed: npm run dev)"
 npx playwright test --config tests/e2e/playwright.config.ts "${specs[@]}" || fail "e2e failed. Reproduce: npx playwright test --config tests/e2e/playwright.config.ts ${specs[*]}"

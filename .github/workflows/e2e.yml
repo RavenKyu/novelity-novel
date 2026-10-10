@@ -1,4 +1,4 @@
-# End-to-end tests against the full docker compose stack (non-required check).
+# End-to-end tests against the containerized app (compose profile "app"; non-required check).
 #
 # Kept out of verify-pull-request.yml on purpose — see the note there. Runs on PRs to
 # main so regressions are visible, and on demand. Real Google sign-in is never
@@ -22,6 +22,9 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 25
+    env:
+      # core-api and web are behind this profile; set job-wide so up, logs and down all include them.
+      COMPOSE_PROFILES: app
     steps:
       - name: Checkout
         uses: actions/checkout@v4

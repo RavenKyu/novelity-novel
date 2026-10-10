@@ -1,0 +1,17 @@
+# Live reload for local development, started by `scripts/dev api` (which also sets the env).
+# Rebuilds on .go changes and restarts the server on :8080.
+root = "."
+tmp_dir = "tmp"
+
+[build]
+cmd = "go build -o ./tmp/server ./cmd/server"
+entrypoint = ["./tmp/server"]
+include_ext = ["go"]
+# Debounce (default 1000ms); short so a save shows up quickly.
+delay = 200
+# SIGINT first, so the old server shuts down gracefully (closes Mongo) before the new one binds :8080.
+send_interrupt = true
+kill_delay = "6s"
+
+[misc]
+clean_on_exit = true

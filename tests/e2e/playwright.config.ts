@@ -5,11 +5,12 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /**
- * Playwright E2E harness against the running docker compose stack.
+ * Playwright E2E harness against the running app.
  *
- * - Targets E2E_BASE_URL (default http://localhost:${WEB_PORT:-8000}); start the
- *   stack first with `docker compose up -d --build`. global-setup fails fast if
- *   /api/healthz is not 200, instead of every spec timing out.
+ * - Targets E2E_BASE_URL (default http://localhost:${WEB_PORT:-8000}), which is
+ *   either the dev servers (`npm run dev`) or the containerized app
+ *   (`docker compose --profile app up -d --build`, as in CI). global-setup fails
+ *   fast if /api/healthz is not 200, instead of every spec timing out.
  * - Workers fixed to 1: specs share one MongoDB and seed/clean their own users.
  */
 const baseURL = process.env.E2E_BASE_URL ?? `http://localhost:${process.env.WEB_PORT ?? '8000'}`;

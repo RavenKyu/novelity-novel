@@ -12,7 +12,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
 	if (status !== 200) {
 		throw new Error(
 			`e2e: ${baseURL}/api/healthz returned ${status || 'no response'}. ` +
-				'Start the stack first: docker compose up -d --build'
+				'Start the app first: npm run dev (or docker compose --profile app up -d --build)'
 		);
 	}
 }
