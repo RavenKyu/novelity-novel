@@ -1,0 +1,14 @@
+# Gitignored files that Claude Code copies into a new git worktree (.gitignore syntax).
+# Only local config a fresh checkout can't recreate. Not listed on purpose: node_modules
+# (npm ci per worktree), build/test output (.svelte-kit, apps/core-api/tmp, artifacts)
+# and runtime state (.moai/lock, .serena/cache).
+
+# Secrets and ports for scripts/dev and docker compose
+.env
+# Vite env files, if web ever gets its own (apps/web/.gitignore reserves them)
+apps/web/.env
+apps/web/.env.*
+
+# Personal tool settings: Claude Code permission allowlist, Serena overrides
+.claude/settings.local.json
+.serena/project.local.yml

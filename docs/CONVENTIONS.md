@@ -67,4 +67,5 @@ core-api 명령은 `scripts/go`로 실행한다. 로컬에 `go`가 있으면 그
 - 서비스 디렉토리는 `apps/<name>`이고 compose 서비스명은 `nn-<name>-server`다.
 - API 경로는 모두 `/api` 접두사 아래에 둔다(nginx 프록시 기준). 로그인이 필요한 API에는 `auth.Service.RequireSession` 미들웨어를 붙이고, 핸들러에서 `auth.CurrentUser(c)`로 사용자를 꺼낸다.
 - 비밀값은 `.env`에만 둔다(git 제외). 새 설정을 추가하면 `.env.example`과 compose 환경변수를 함께 갱신한다.
+- git 제외 파일 중 새 worktree에도 있어야 하는 것(`.env` 등)은 `.worktreeinclude`에 적는다. Claude Code가 worktree를 만들 때 복사한다.
 - web UI는 docs/STYLE.md를 따른다. 색은 `layout.css`의 토큰만 쓰고, 새 페이지는 `Header` + `PageContent`로 만든다.
