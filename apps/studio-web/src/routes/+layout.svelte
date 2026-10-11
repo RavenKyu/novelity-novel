@@ -7,7 +7,7 @@
 	import { Sidebar, UserMenu } from '@novelity/ui';
 	import { HomeOutline } from 'flowbite-svelte-icons';
 	import { logout } from '$lib/auth.svelte';
-	import { localReturnTo } from '@novelity/api-client';
+	import { googleLoginUrl, localReturnTo } from '@novelity/api-client';
 
 	let { children } = $props();
 
@@ -23,7 +23,13 @@
 				replaceState: true
 			});
 		} else if (session.user && isChromeless) {
-			void goto(localReturnTo(page.url.searchParams.get('returnTo')), { replaceState: true });
+			const returnTo = page.url.searchParams.get('returnTo');
+			if (returnTo && /^https?:\/\//.test(returnTo)) {
+				// The API owns the cross-space origin allowlist and rechecks the live session.
+				window.location.assign(googleLoginUrl(returnTo));
+			} else {
+				void goto(localReturnTo(returnTo), { replaceState: true });
+			}
 		}
 	});
 </script>

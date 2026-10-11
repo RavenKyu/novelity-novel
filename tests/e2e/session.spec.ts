@@ -48,3 +48,21 @@ test("public deployment has no admin API routes", async ({ page }) => {
   expect((await page.request.get("/api/admin/healthz")).status()).toBe(404);
   expect((await page.request.get("/api/store/healthz")).status()).toBe(200);
 });
+
+test("signed-in cross-space returnTo is validated by the API", async ({
+  page,
+  user,
+}) => {
+  const returnTo = "https://novelity.kr/library";
+  await page.route("**/api/auth/google/login?*", async (route) => {
+    const target = new URL(route.request().url());
+    expect(target.searchParams.get("returnTo")).toBe(returnTo);
+    await route.fulfill({
+      status: 200,
+      contentType: "text/html",
+      body: "<p>validated return</p>",
+    });
+  });
+  await page.goto("/login?" + new URLSearchParams({ returnTo }));
+  await expect(page.getByText("validated return")).toBeVisible();
+});

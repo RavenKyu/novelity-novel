@@ -123,6 +123,22 @@ func (s *Service) login(c *echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid_return_to"})
 	}
+	// A live session can return across public spaces without another Google round trip.
+	// The same audience and current role policy applies as on authenticated API requests.
+	name, audience := sessionIdentity(space)
+	if cookie, err := c.Cookie(name); err == nil && cookie.Value != "" {
+		user, err := s.repo.SessionUser(c.Request().Context(), hashToken(cookie.Value), s.now(), audience)
+		if err == nil {
+			user = identity.EffectiveRoles(user, s.cfg.AdminEmails)
+			if space == "admin" && !user.HasRole(identity.Admin) {
+				return s.loginError(c, "forbidden", returnTo)
+			}
+			return c.Redirect(http.StatusFound, returnTo)
+		}
+		if !errors.Is(err, identity.ErrNoSession) {
+			return err
+		}
+	}
 	if !s.cfg.Enabled() {
 		return s.loginError(c, "not_configured", returnTo)
 	}

@@ -225,3 +225,21 @@ func TestFlowCookieSizeLimit(t *testing.T) {
 		}
 	}
 }
+
+func TestExistingSessionReturnsAcrossSpacesWithoutGoogle(t *testing.T) {
+	h := newHarness(t)
+	h.svc.cfg.Origins["store"] = "http://store.test"
+	sess := cookie(h.login(t, nil), SessionCookie)
+	h.svc.cfg.ClientID = ""
+	h.svc.cfg.ClientSecret = ""
+	for _, target := range []string{"/works?tab=draft", "http://store.test/library"} {
+		rec := h.do("GET", "/api/auth/google/login?"+url.Values{"returnTo": {target}}.Encode(), []*http.Cookie{sess})
+		if rec.Code != 302 || rec.Header().Get("Location") != target || cookie(rec, flowCookie) != nil {
+			t.Fatalf("existing session return: %d %s", rec.Code, rec.Header().Get("Location"))
+		}
+	}
+	rec := h.do("GET", "/api/auth/google/login?returnTo=https://evil.test", []*http.Cookie{sess})
+	if rec.Code != 400 {
+		t.Fatal("existing session bypasses origin validation")
+	}
+}
