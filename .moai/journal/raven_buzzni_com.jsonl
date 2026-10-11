@@ -90,3 +90,4 @@
 {"ts":"2026-10-11T13:09:32Z","id":"nn-gvs7","kind":"note","by":"Raven","by_email":"raven@buzzni.com","text":"nn-t7mw 에서 펼쳤다 — AI 에이전트·조판·발행 기반 설계 (ADR-003)"}
 {"ts":"2026-10-11T13:09:32Z","id":"nn-t7mw","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"todo","to":"done","note":"nn-gvs7 로 펼쳤다 (이슈 1건)"}
 {"ts":"2026-10-11T13:09:43Z","id":"nn-gvs7","kind":"note","by":"Raven","by_email":"raven@buzzni.com","text":"범위 (사용자 결정, 2026-10-11): 이 마일스톤(세 공간 분리)에는 설계(ADR-003)만 넣는다. 구현은 이 마일스톤이 develop에 들어간 뒤 새 마일스톤으로 한다. 본문의 \"새 마일스톤으로 펼친다\"는 구현을 가리킨다."}
+{"ts":"2026-10-11T13:11:17Z","id":"nn-gvs7","kind":"note","by":"Raven","by_email":"raven@buzzni.com","text":"Sent: codex-1 (Codex, cmux surface 98178FC0, GPT-6.1-Sol high) — 감독자 novelity-novel-1c"}
