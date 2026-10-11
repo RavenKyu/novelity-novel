@@ -1,0 +1,145 @@
+#!/usr/bin/env bash
+# Repeatable check of scripts/release changelog and notes, with and without an "## Unreleased" section.
+# Runs on a temporary copy; nothing in the repository is touched.
+set -euo pipefail
+
+root=$(cd "$(dirname "$0")/.." && pwd)
+tmp=$(mktemp -d)
+trap 'rm -rf "$tmp"' EXIT
+
+mkdir -p "$tmp/scripts"
+cp "$root/scripts/release" "$tmp/scripts/release"
+cd "$tmp"
+git init -q .
+
+cat >notes.md <<'N'
+<!-- Release notes generated using configuration in .github/release.yml at develop -->
+
+## What's Changed
+## 기능
+* 새 기능 by @someone in #1
+
+**Full Changelog**: https://example.test/compare/v0.1.0...v0.2.0
+N
+
+failures=0
+check() {
+	if ! grep -qF -- "$2" "$1"; then
+		echo "FAIL: $1 lacks: $2" >&2
+		failures=$((failures + 1))
+	fi
+}
+absent() {
+	if grep -qF -- "$2" "$1"; then
+		echo "FAIL: $1 still has: $2" >&2
+		failures=$((failures + 1))
+	fi
+}
+# The first non-empty line after the "## v0.2.0" heading.
+first_after_version() {
+	awk '/^## v0\.2\.0 /{ f = 1; next } f && NF { print; exit }' "$1"
+}
+
+# 1. With Unreleased (and an earlier version below it).
+cat >CHANGELOG.md <<'C'
+# Changelog
+
+intro
+
+## Unreleased — 부제
+
+- 손으로 쓴 항목 하나
+- 손으로 쓴 항목 둘
+
+## v0.1.0 — 2026-01-01
+
+### 기능
+* 옛 항목
+C
+scripts/release changelog 0.2.0 notes.md
+scripts/release notes 0.2.0 >notes-0.2.0.txt
+absent CHANGELOG.md "## Unreleased"
+check CHANGELOG.md "## v0.2.0 — "
+check CHANGELOG.md "- 손으로 쓴 항목 둘"
+check CHANGELOG.md "* 새 기능 by @someone in #1"
+check notes-0.2.0.txt "- 손으로 쓴 항목 하나"
+check notes-0.2.0.txt "* 새 기능 by @someone in #1"
+absent notes-0.2.0.txt "옛 항목"
+v2=$(grep -n '^## v0.2.0' CHANGELOG.md | cut -d: -f1)
+v1=$(grep -n '^## v0.1.0' CHANGELOG.md | cut -d: -f1)
+[ "$v2" -lt "$v1" ] || { echo "FAIL: v0.2.0 must stand above v0.1.0" >&2; failures=$((failures + 1)); }
+# The subtitle stays as the first thing in the version section, in the CHANGELOG and in the notes.
+[ "$(first_after_version CHANGELOG.md)" = "### 부제" ] || { echo "FAIL: subtitle must open the v0.2.0 section" >&2; failures=$((failures + 1)); }
+[ "$(sed -n '1p' notes-0.2.0.txt)" = "### 부제" ] || { echo "FAIL: subtitle must open the release notes" >&2; failures=$((failures + 1)); }
+
+# 2. Unreleased only, no earlier version.
+cat >CHANGELOG.md <<'C'
+# Changelog
+
+intro
+
+## Unreleased
+
+- 항목
+C
+scripts/release changelog 0.2.0 notes.md
+absent CHANGELOG.md "## Unreleased"
+check CHANGELOG.md "- 항목"
+check CHANGELOG.md "* 새 기능 by @someone in #1"
+# No subtitle, no heading: the items open the section.
+[ "$(first_after_version CHANGELOG.md)" = "- 항목" ] || { echo "FAIL: without a subtitle the items must open the section" >&2; failures=$((failures + 1)); }
+
+# 2b. Two Unreleased sections, subtitles after "-" and ":": both stay, in order.
+cat >CHANGELOG.md <<'C'
+# Changelog
+
+## Unreleased - 첫째
+
+- 하나
+
+## Unreleased: 둘째
+
+- 둘
+C
+scripts/release changelog 0.2.0 notes.md
+absent CHANGELOG.md "Unreleased"
+check CHANGELOG.md "### 첫째"
+check CHANGELOG.md "### 둘째"
+check CHANGELOG.md "- 둘"
+a=$(grep -n '^### 첫째$' CHANGELOG.md | cut -d: -f1)
+b=$(grep -n '^### 둘째$' CHANGELOG.md | cut -d: -f1)
+[ -n "$a" ] && [ -n "$b" ] && [ "$a" -lt "$b" ] || { echo "FAIL: two subtitles must stay in order" >&2; failures=$((failures + 1)); }
+
+# 3. Without Unreleased: unchanged behaviour (prepended before the first version).
+cat >CHANGELOG.md <<'C'
+# Changelog
+
+intro
+
+## v0.1.0 — 2026-01-01
+
+### 기능
+* 옛 항목
+C
+scripts/release changelog 0.2.0 notes.md
+v2=$(grep -n '^## v0.2.0' CHANGELOG.md | cut -d: -f1)
+v1=$(grep -n '^## v0.1.0' CHANGELOG.md | cut -d: -f1)
+[ "$v2" -lt "$v1" ] || { echo "FAIL: no-Unreleased case: v0.2.0 must stand above v0.1.0" >&2; failures=$((failures + 1)); }
+absent CHANGELOG.md "Unreleased"
+
+# 4. No sections at all: appended at the end.
+printf '# Changelog\n\nintro\n' >CHANGELOG.md
+scripts/release changelog 0.2.0 notes.md
+check CHANGELOG.md "## v0.2.0 — "
+
+# 5. Refuses a version that is already there.
+if scripts/release changelog 0.2.0 notes.md 2>/dev/null; then
+	echo "FAIL: duplicate version accepted" >&2
+	failures=$((failures + 1))
+fi
+
+if [ "$failures" -ne 0 ]; then
+	echo "release script: $failures failed" >&2
+	exit 1
+fi
+echo "release script: all checks passed"

@@ -6,6 +6,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
+
+	"novelity-novel/core-api/internal/http/auth"
+	"novelity-novel/core-api/internal/identity"
 )
 
 type fakePinger struct{ err error }
@@ -40,5 +44,85 @@ func TestHealthzDBDown(t *testing.T) {
 	}
 	if got, want := rec.Body.String(), "{\"db\":\"down\",\"status\":\"degraded\"}\n"; got != want {
 		t.Fatalf("body = %q, want %q", got, want)
+	}
+}
+
+func TestOnlySelectedSurfacesAreMounted(t *testing.T) {
+	for _, tc := range []struct {
+		surfaces []string
+		path     string
+		want     int
+	}{
+		{nil, "/api/admin/healthz", 404},
+		{nil, "/api/admin/users", 404},
+		{[]string{"studio", "store"}, "/api/admin/users", 404},
+		{nil, "/api/store/healthz", 200},
+		{nil, "/api/studio/healthz", 401},
+		{[]string{"store"}, "/api/studio/healthz", 404},
+		{[]string{"admin"}, "/api/store/healthz", 404},
+		{[]string{"admin"}, "/api/admin/healthz", 401},
+		{[]string{}, "/api/store/healthz", 404},
+	} {
+		e := New(Deps{DB: fakePinger{}, Surfaces: tc.surfaces})
+		if rec := get(t, e, tc.path); rec.Code != tc.want {
+			t.Fatalf("surfaces %v %s: %d, want %d", tc.surfaces, tc.path, rec.Code, tc.want)
+		}
+		if rec := get(t, e, "/api/healthz"); rec.Code != 200 {
+			t.Fatal("common health disappeared")
+		}
+	}
+}
+
+type sessionRepo struct{ user identity.User }
+
+func (r sessionRepo) UpsertGoogleUser(context.Context, identity.Profile, time.Time) (identity.User, error) {
+	return r.user, nil
+}
+func (r sessionRepo) CreateSession(context.Context, identity.Session) error { return nil }
+func (r sessionRepo) SessionUser(_ context.Context, _ string, _ time.Time, audience string) (identity.User, error) {
+	if audience != "admin" {
+		return identity.User{}, identity.ErrNoSession
+	}
+	return r.user, nil
+}
+func (r sessionRepo) DeleteSession(context.Context, string, string) error { return nil }
+
+func TestAdminSurfaceAuthorization(t *testing.T) {
+	for _, tc := range []struct {
+		allow []string
+		want  int
+	}{{nil, 403}, {[]string{"admin@example.com"}, 200}} {
+		repo := sessionRepo{identity.User{ID: "u", Email: "admin@example.com", Roles: []identity.Role{identity.Reader, identity.Admin}}}
+		svc := auth.New(auth.Config{Origins: map[string]string{"admin": "https://admin.novelity.kr"}, Surfaces: []string{"admin"}, AdminEmails: tc.allow}, repo)
+		e := New(Deps{DB: fakePinger{}, Auth: svc, Surfaces: []string{"admin"}})
+		req := httptest.NewRequest("GET", "https://admin.novelity.kr/api/admin/users", nil)
+		req.AddCookie(&http.Cookie{Name: auth.AdminSessionCookie, Value: "admin-token"})
+		rec := httptest.NewRecorder()
+		e.ServeHTTP(rec, req)
+		if tc.want == 200 && (rec.Body.String() != "{\"users\":[]}\n" || rec.Header().Get("Cache-Control") != "private, no-store") {
+			t.Fatalf("invalid skeleton response: %s", rec.Body.String())
+		}
+		if rec.Code != tc.want {
+			t.Fatalf("allow %v: %d, want %d", tc.allow, rec.Code, tc.want)
+		}
+	}
+}
+
+func TestAdminRejectsPublicSessionAndUnknownHost(t *testing.T) {
+	repo := sessionRepo{identity.User{ID: "u", Email: "admin@example.com"}}
+	svc := auth.New(auth.Config{Origins: map[string]string{"admin": "https://admin.novelity.kr"}, Surfaces: []string{"admin"}, AdminEmails: []string{"admin@example.com"}}, repo)
+	e := New(Deps{DB: fakePinger{}, Auth: svc, Surfaces: []string{"admin"}})
+	for _, tc := range []struct{ host, cookie string }{
+		{"admin.novelity.kr", ""},
+		{"admin.novelity.kr", "nn_session=public-token"},
+		{"studio.novelity.kr", "nn_admin_session=admin-token"},
+	} {
+		req := httptest.NewRequest("GET", "https://"+tc.host+"/api/admin/users", nil)
+		req.Header.Set("Cookie", tc.cookie)
+		rec := httptest.NewRecorder()
+		e.ServeHTTP(rec, req)
+		if rec.Code != http.StatusUnauthorized {
+			t.Fatalf("%+v: %d", tc, rec.Code)
+		}
 	}
 }

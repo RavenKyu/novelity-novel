@@ -1,14 +1,16 @@
 #!/usr/bin/env bash
 # Release helpers for .github/workflows/prepare-release.yml and publish-release.yml.
-# One version for the whole repo: git tag vX.Y.Z, mirrored in apps/web/package.json.
+# One version for the whole repo: git tag vX.Y.Z, mirrored in apps/studio-web/package.json.
 #
 #   scripts/release version <auto|patch|minor|major> [target]
 #       Next version, as GITHUB_OUTPUT lines: version=X.Y.Z, previous=<last tag or empty>, level=…
 #       auto picks the level from the labels of PRs merged into develop since the last tag:
 #       breaking → major (minor before 1.0), feature → minor, otherwise patch.
-#       Without any tag, the first release is the version in apps/web/package.json.
+#       Without any tag, the first release is the version in apps/studio-web/package.json.
 #   scripts/release changelog <X.Y.Z> <notes.md>
 #       Prepend a "## vX.Y.Z — date (KST)" section built from GitHub's generated notes to CHANGELOG.md.
+#       A hand-written "## Unreleased" section (a subtitle after the word is allowed) is folded into
+#       that section, its body first, and removed; without one the file is only prepended to.
 #   scripts/release notes <X.Y.Z>
 #       Print that version's CHANGELOG.md section (the GitHub Release body).
 set -euo pipefail
@@ -63,7 +65,7 @@ cmd_version() {
 	case "$requested" in auto | patch | minor | major) ;; *) fail "bump must be auto, patch, minor or major" ;; esac
 	previous=$(latest_tag)
 	if [ -z "$previous" ]; then
-		next=$(node -p "require('./apps/web/package.json').version")
+		next=$(node -p "require('./apps/studio-web/package.json').version")
 		level=initial
 		if [ "$requested" != auto ]; then
 			next=$(bump "$next" "$requested")
@@ -85,22 +87,41 @@ cmd_version() {
 }
 
 cmd_changelog() {
-	local version="$1" notes="$2" section
+	local version="$1" notes="$2" section unreleased
 	[ -f "$notes" ] || fail "notes file not found: $notes"
+	[ -f CHANGELOG.md ] || printf '# Changelog\n' >CHANGELOG.md
+	grep -q "^## v$version " CHANGELOG.md && fail "CHANGELOG.md already has v$version"
+	# A hand-written "## Unreleased" section is folded into the new version: its body goes first and its
+	# heading disappears. A subtitle after the word ("## Unreleased — 세 공간 분리") stays as a "### "
+	# heading over that body, so the milestone name reaches the release notes. Without one nothing changes.
+	unreleased=$(awk '
+		/^## Unreleased([[:space:]:]|$)/ {
+			found = 1
+			sub(/^## Unreleased[[:space:]]*/, "")
+			# "— 부제", "– 부제", "- 부제" and ": 부제" all leave just the subtitle.
+			sub(/^(—|–|-|:)[[:space:]]*/, "")
+			if ($0 != "") { print "### " $0; print "" }
+			next
+		}
+		found && /^## / { exit }
+		found { print }
+	' CHANGELOG.md | cat -s | sed -e '/./,$!d')
 	# GitHub's notes: drop the generator comment and "What's Changed", nest the rest under the version.
 	section=$(
 		printf '## v%s — %s\n\n' "$version" "$(TZ=Asia/Seoul date +%Y-%m-%d)"
+		if [ -n "$unreleased" ]; then printf '%s\n\n' "$unreleased"; fi
 		sed -e '/^<!-- Release notes generated/d' -e "/^## What's Changed/d" -e 's/^## /### /' "$notes" |
 			cat -s | sed -e '/./,$!d'
 	)
-	[ -f CHANGELOG.md ] || printf '# Changelog\n' >CHANGELOG.md
-	grep -q "^## v$version " CHANGELOG.md && fail "CHANGELOG.md already has v$version"
-	# Insert before the first existing version section, after the file header.
+	# Insert before the first existing version section, after the file header (or at the end).
 	# (ENVIRON, not -v: awk would interpret backslashes in the notes.)
 	SECTION="$section" awk '
+		/^## Unreleased([[:space:]:]|$)/ { skip = 1; next }
+		skip && /^## / { skip = 0 }
+		skip { next }
 		!done && /^## v/ { print ENVIRON["SECTION"]; print ""; done = 1 }
-		{ print }
-		END { if (!done) { print ""; print ENVIRON["SECTION"] } }
+		{ print; last = $0 }
+		END { if (!done) { if (last != "") print ""; print ENVIRON["SECTION"] } }
 	' CHANGELOG.md >CHANGELOG.md.tmp
 	mv CHANGELOG.md.tmp CHANGELOG.md
 }

@@ -1,0 +1,14 @@
+**/node_modules
+**/.svelte-kit
+**/build
+**/tmp
+.git
+.worktrees
+.claude
+.moai
+.serena
+memory
+.env
+**/.env
+**/.env.*
+artifacts

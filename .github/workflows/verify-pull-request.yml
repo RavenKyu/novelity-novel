@@ -86,9 +86,6 @@ jobs:
   web:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    defaults:
-      run:
-        working-directory: apps/web
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -98,7 +95,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: apps/web/package-lock.json
+          cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
@@ -108,6 +105,21 @@ jobs:
 
       - name: Format check (prettier)
         run: npm run lint
+
+      - name: API client tests
+        run: npm test --workspace @novelity/api-client
+
+      - name: Release script tests
+        run: scripts/test-release
+
+      - name: Bookstore server transport tests
+        run: npm test --workspace @novelity/bookstore-web
+
+      - name: Install Chromium for admin guard tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Admin SPA guard tests
+        run: npm test --workspace @novelity/admin-web
 
       - name: Build
         run: npm run build
