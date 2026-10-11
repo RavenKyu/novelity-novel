@@ -14,7 +14,7 @@ import (
 func TestReturnToValidation(t *testing.T) {
 	h := newHarness(t)
 	h.svc.cfg.Origins["store"] = "http://store.test"
-	for _, target := range []string{"/works?tab=draft#chapter", "http://store.test/library", "http://studio.test/works"} {
+	for _, target := range []string{"/works?tab=draft#chapter", "http://store.test/library", "http://studio.test/works", "/search?q=a%20b", "/works/%ED%95%9C%20%EA%B8%80", "/works#a%20b", "/%E3%80%80x", "/search?q=a+b", "/..//evil.test"} {
 		t.Run(target, func(t *testing.T) {
 			rec := h.do("GET", "/api/auth/google/login?"+url.Values{"returnTo": {target}}.Encode(), nil)
 			flow := cookie(rec, flowCookie)
@@ -32,7 +32,7 @@ func TestReturnToValidation(t *testing.T) {
 			}
 		})
 	}
-	for _, target := range []string{"//evil.test", "https://evil.test/", "http://studio.test.evil/", "http://studio.test@evil.test/", "http://admin.test/", "javascript:alert(1)", "/\\evil.test", "/%2f%2fevil.test", "/%5cevil.test", "/x%0d%0aLocation:evil", "works", "https://studio.test/", "http://studio.test:80/"} {
+	for _, target := range []string{"//evil.test", "https://evil.test/", "http://studio.test.evil/", "http://studio.test@evil.test/", "http://admin.test/", "javascript:alert(1)", "/\\evil.test", "/%2f%2fevil.test", "/%5cevil.test", "/x%0d%0aLocation:evil", "works", "https://studio.test/", "http://studio.test:80/", "/a b", "/a\tb", "/\u3000x", "/%09x", "/%00x", "/%0a", "/a%5Cb"} {
 		rec := h.do("GET", "/api/auth/google/login?"+url.Values{"returnTo": {target}}.Encode(), nil)
 		if rec.Code != http.StatusBadRequest {
 			t.Fatalf("accepted %q: %d", target, rec.Code)

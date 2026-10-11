@@ -33,8 +33,14 @@ func (s *Service) validReturnTo(raw string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// Raw (still encoded) values may not carry whitespace at all; decoded values may carry
+	// encoded spaces (%20, %E3%80%80) but never control characters or backslashes, which
+	// URL parsers disagree about.
+	if strings.IndexFunc(raw, func(r rune) bool { return unicode.IsControl(r) || unicode.IsSpace(r) }) >= 0 {
+		return "", fmt.Errorf("unsafe returnTo")
+	}
 	for _, value := range []string{raw, decoded} {
-		if strings.Contains(value, "\\") || strings.IndexFunc(value, func(r rune) bool { return unicode.IsControl(r) || unicode.IsSpace(r) }) >= 0 {
+		if strings.Contains(value, "\\") || strings.IndexFunc(value, unicode.IsControl) >= 0 {
 			return "", fmt.Errorf("unsafe returnTo")
 		}
 	}
