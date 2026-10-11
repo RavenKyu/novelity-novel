@@ -1,0 +1,23 @@
+{"ts":"2026-10-11T11:27:07Z","id":"nn-ku9r","kind":"create","by":"Raven","by_email":"raven@buzzni.com","title":"작가·서점·관리자 3개 공간 분리 구조"}
+{"ts":"2026-10-11T11:35:35Z","id":"nn-5p12","kind":"create","by":"Raven","by_email":"raven@buzzni.com","title":"세 공간 분리"}
+{"ts":"2026-10-11T11:35:46Z","id":"nn-l4cg","kind":"create","by":"Raven","by_email":"raven@buzzni.com","title":"세 공간 기반"}
+{"ts":"2026-10-11T11:35:46Z","id":"nn-l4cg.h2y","kind":"create","by":"Raven","by_email":"raven@buzzni.com","title":"ADR-002: 공간·도메인·역할·세션 결정"}
+{"ts":"2026-10-11T11:35:46Z","id":"nn-l4cg.93z","kind":"create","by":"Raven","by_email":"raven@buzzni.com","title":"apps/web을 작가 공간 앱으로 이름 변경"}
+{"ts":"2026-10-11T11:35:46Z","id":"nn-l4cg.iqx","kind":"create","by":"Raven","by_email":"raven@buzzni.com","title":"core-api: auth를 identity로 재구성하고 역할 추가"}
+{"ts":"2026-10-11T11:35:46Z","id":"nn-l4cg.bnv","kind":"create","by":"Raven","by_email":"raven@buzzni.com","title":"core-api: 쓰는 쪽별 경로 분리와 실행 시 경로 선택"}
+{"ts":"2026-10-11T11:35:46Z","id":"nn-l4cg.iub","kind":"create","by":"Raven","by_email":"raven@buzzni.com","title":"로그인 후 원래 공간으로 돌아가기"}
+{"ts":"2026-10-11T11:35:46Z","id":"nn-l4cg.1nw","kind":"create","by":"Raven","by_email":"raven@buzzni.com","title":"packages/ui 추출과 npm workspaces 도입"}
+{"ts":"2026-10-11T11:35:46Z","id":"nn-l4cg.k5g","kind":"create","by":"Raven","by_email":"raven@buzzni.com","title":"문서: ARCHITECTURE·CONVENTIONS 갱신"}
+{"ts":"2026-10-11T11:35:46Z","id":"nn-aa6i","kind":"create","by":"Raven","by_email":"raven@buzzni.com","title":"서점 골격"}
+{"ts":"2026-10-11T11:35:46Z","id":"nn-aa6i.680","kind":"create","by":"Raven","by_email":"raven@buzzni.com","title":"bookstore 웹 골격 (SSR)"}
+{"ts":"2026-10-11T11:35:46Z","id":"nn-aa6i.ogv","kind":"create","by":"Raven","by_email":"raven@buzzni.com","title":"core-api: /api/store 경로와 선택적 세션"}
+{"ts":"2026-10-11T11:35:46Z","id":"nn-aa6i.gii","kind":"create","by":"Raven","by_email":"raven@buzzni.com","title":"서점 개발·CI·컨테이너 연결"}
+{"ts":"2026-10-11T11:35:46Z","id":"nn-w097","kind":"create","by":"Raven","by_email":"raven@buzzni.com","title":"관리자 골격"}
+{"ts":"2026-10-11T11:35:46Z","id":"nn-w097.asy","kind":"create","by":"Raven","by_email":"raven@buzzni.com","title":"admin 웹 골격"}
+{"ts":"2026-10-11T11:35:46Z","id":"nn-w097.fe0","kind":"create","by":"Raven","by_email":"raven@buzzni.com","title":"core-api: /api/admin 경로와 관리자 세션 분리"}
+{"ts":"2026-10-11T11:35:46Z","id":"nn-w097.5xi","kind":"create","by":"Raven","by_email":"raven@buzzni.com","title":"관리자 내부망 전용 배포"}
+{"ts":"2026-10-11T11:35:46Z","id":"nn-l4cg","kind":"note","by":"Raven","by_email":"raven@buzzni.com","text":"nn-ku9r 에서 펼쳤다 — 작가·서점·관리자 3개 공간 분리 구조"}
+{"ts":"2026-10-11T11:35:46Z","id":"nn-aa6i","kind":"note","by":"Raven","by_email":"raven@buzzni.com","text":"nn-ku9r 에서 펼쳤다 — 작가·서점·관리자 3개 공간 분리 구조"}
+{"ts":"2026-10-11T11:35:46Z","id":"nn-w097","kind":"note","by":"Raven","by_email":"raven@buzzni.com","text":"nn-ku9r 에서 펼쳤다 — 작가·서점·관리자 3개 공간 분리 구조"}
+{"ts":"2026-10-11T11:35:46Z","id":"nn-ku9r","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"todo","to":"done","note":"nn-l4cg nn-aa6i nn-w097 로 펼쳤다 (이슈 13건)"}
+{"ts":"2026-10-11T11:50:05Z","id":"nn-l4cg","kind":"note","by":"Raven","by_email":"raven@buzzni.com","text":"Sent: codex-1 (Codex, cmux surface 98178FC0, GPT-6.1-Sol high) — 감독자 novelity-novel-1c"}
