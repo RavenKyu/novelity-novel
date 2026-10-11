@@ -56,3 +56,5 @@ MongoDB `novelity` DB. 인덱스는 core-api가 시작할 때 `EnsureIndexes`로
 ## 관련 ADR
 
 - [ADR-001](adr/001-google-oidc-mongo-sessions.md) Google OIDC 로그인과 MongoDB 서버 세션
+
+- [ADR-002](adr/002-spaces-identity-sessions.md) 세 공간과 identity·역할·세션 경계
