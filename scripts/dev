@@ -35,18 +35,18 @@ api)
 	cd apps/core-api
 	exec "$air_dir/air"
 	;;
-web)
-	[ -d apps/studio-web/node_modules ] || fail "apps/studio-web/node_modules missing — run: (cd apps/studio-web && npm ci)"
+studio | web)
+	[ -x node_modules/.bin/vite ] || fail "workspace dependencies missing — run: npm ci"
 	cd apps/studio-web
 	exec npm run dev
 	;;
 all)
 	[ -x node_modules/.bin/concurrently ] || fail "node_modules missing — run: npm ci"
-	exec node_modules/.bin/concurrently --kill-others --names api,web --prefix-colors blue,magenta \
-		"scripts/dev api" "scripts/dev web"
+	exec node_modules/.bin/concurrently --kill-others --names api,studio --prefix-colors blue,magenta \
+		"scripts/dev api" "scripts/dev studio"
 	;;
 *)
-	echo "usage: scripts/dev [api|web]" >&2
+	echo "usage: scripts/dev [api|studio]" >&2
 	exit 2
 	;;
 esac

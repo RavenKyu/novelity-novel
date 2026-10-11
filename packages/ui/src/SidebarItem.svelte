@@ -13,7 +13,7 @@
 
 <a
 	{href}
-	class="flex h-8 items-center gap-2.5 rounded-sm pr-3 pl-4 text-sm transition-colors duration-100"
+	class="h-8 gap-2.5 rounded-sm pr-3 pl-4 text-sm flex items-center transition-colors duration-100"
 	class:bg-[var(--color-sidebar-active)]={active}
 	class:font-medium={active}
 	class:text-[var(--color-sidebar-text-active)]={active}

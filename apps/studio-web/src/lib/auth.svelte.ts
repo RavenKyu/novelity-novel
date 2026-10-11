@@ -1,9 +1,7 @@
-export interface User {
-	id: string;
-	email: string;
-	name: string;
-	picture: string;
-}
+import { createApiClient, type User } from '@novelity/api-client';
+export type { User } from '@novelity/api-client';
+export { googleLoginUrl } from '@novelity/api-client';
+const api = createApiClient();
 
 // Current session, filled by loadSession(). `checked` turns true once the
 // server has answered, so the shell can wait instead of flashing.
@@ -14,8 +12,7 @@ export const session = $state<{ user: User | null; checked: boolean }>({
 
 export async function loadSession(): Promise<User | null> {
 	try {
-		const res = await fetch('/api/auth/me');
-		session.user = res.ok ? ((await res.json()) as User) : null;
+		session.user = await api.me();
 	} catch {
 		session.user = null;
 	}
@@ -24,9 +21,6 @@ export async function loadSession(): Promise<User | null> {
 }
 
 export async function logout(): Promise<void> {
-	await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+	await api.logout();
 	session.user = null;
 }
-
-// Full-page navigation: the server runs the OAuth redirect chain.
-export const googleLoginUrl = '/api/auth/google/login';

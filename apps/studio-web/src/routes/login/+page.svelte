@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { Card } from 'flowbite-svelte';
-	import { googleLoginUrl } from '$lib/auth.svelte';
+	import { googleLoginUrl } from '@novelity/api-client';
 
 	// Codes come from core-api's callback redirect (/login?error=…).
 	const messages: Record<string, string> = {
@@ -18,7 +18,7 @@
 </script>
 
 <svelte:head>
-	<title>로그인 · Novelity Admin</title>
+	<title>로그인 · Novelity Studio</title>
 </svelte:head>
 
 <div class="flex min-h-screen items-center justify-center bg-[var(--color-body)] px-4">
@@ -33,7 +33,7 @@
 					<span class="text-lg font-bold text-white">N</span>
 				</div>
 				<h1 class="text-xl font-semibold tracking-tight text-[var(--color-text-primary)]">
-					Novelity Admin
+					Novelity Studio
 				</h1>
 				<p class="mt-1 text-sm text-[var(--color-text-secondary)]">
 					Google 계정으로 로그인하여 시작하세요.
@@ -49,7 +49,7 @@
 			{/if}
 
 			<a
-				href={googleLoginUrl}
+				href={googleLoginUrl(page.url.searchParams.get('returnTo') ?? '/')}
 				data-sveltekit-reload
 				class="mt-6 flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--color-input-border)] bg-white py-2.5 text-sm font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)]"
 			>

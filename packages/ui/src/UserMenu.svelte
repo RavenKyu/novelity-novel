@@ -1,12 +1,11 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { ArrowRightToBracketOutline, ChevronSortOutline } from 'flowbite-svelte-icons';
-	import { logout, session } from '$lib/auth.svelte';
+	import type { User } from '@novelity/api-client';
+	let { user, onLogout }: { user: User | null; onLogout: () => Promise<void> } = $props();
 
 	let open = $state(false);
 	let root: HTMLDivElement | undefined = $state();
 
-	const user = $derived(session.user);
 	const initial = $derived((user?.name || user?.email || '?').charAt(0).toUpperCase());
 
 	function onWindowClick(e: MouseEvent) {
@@ -15,8 +14,7 @@
 
 	async function handleLogout() {
 		open = false;
-		await logout();
-		await goto('/login');
+		await onLogout();
 	}
 </script>
 

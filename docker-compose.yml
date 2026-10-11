@@ -30,7 +30,12 @@ services:
       PORT: "8080"
       MONGO_URI: mongodb://${MONGO_ROOT_USER:-novelity}:${MONGO_ROOT_PASSWORD:-novelity-dev}@nn-mongodb:27017/?authSource=admin
       MONGO_DB: novelity
-      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:8000}
+      STUDIO_URL: ${STUDIO_URL:-http://localhost:8000}
+      BOOKSTORE_URL: ${BOOKSTORE_URL:-http://localhost:8001}
+      ADMIN_URL: ${ADMIN_URL:-http://localhost:8002}
+      SESSION_DOMAIN: ${SESSION_DOMAIN:-}
+      # Explicit public selection; admin runs in a separate instance in nn-w097.
+      API_SURFACES: studio,store
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       SESSION_TTL: ${SESSION_TTL:-168h}
@@ -44,7 +49,9 @@ services:
 
   nn-studio-web-server:
     profiles: [app]
-    build: ./apps/studio-web
+    build:
+      context: .
+      dockerfile: apps/studio-web/Dockerfile
     image: nn-studio-web-server:local
     ports:
       - "${WEB_PORT:-8000}:80"

@@ -45,8 +45,10 @@ jobs:
         include:
           - image: nn-core-api-server
             context: apps/core-api
+            dockerfile: apps/core-api/Dockerfile
           - image: nn-studio-web-server
-            context: apps/studio-web
+            context: .
+            dockerfile: apps/studio-web/Dockerfile
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -76,6 +78,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
           push: false
           tags: ${{ matrix.image }}:ci
           cache-from: type=gha,scope=${{ matrix.image }}

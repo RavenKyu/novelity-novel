@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { Badge, Card } from 'flowbite-svelte';
-	import Header from '$lib/components/layout/Header.svelte';
-	import PageContent from '$lib/components/layout/PageContent.svelte';
+	import { Header } from '@novelity/ui';
+	import { PageContent } from '@novelity/ui';
 
 	let api = $state<'checking' | 'ok' | 'down'>('checking');
 

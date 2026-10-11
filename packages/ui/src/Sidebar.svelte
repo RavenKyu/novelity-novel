@@ -1,39 +1,41 @@
 <script lang="ts">
-	import { page } from '$app/state';
-	import { HomeOutline } from 'flowbite-svelte-icons';
+	import type { Component, Snippet } from 'svelte';
 	import SidebarItem from './SidebarItem.svelte';
-	import UserMenu from './UserMenu.svelte';
-
-	const navigation = [{ label: '홈', href: '/', icon: HomeOutline }];
-
+	interface Props {
+		title: string;
+		version: string;
+		pathname: string;
+		navigation: { label: string; href: string; icon?: Component<{ class?: string }> }[];
+		userMenu?: Snippet;
+	}
+	let { title, version, pathname, navigation, userMenu }: Props = $props();
 	function isActive(href: string): boolean {
-		const path = page.url.pathname;
-		return href === '/' ? path === '/' : path === href || path.startsWith(href + '/');
+		return href === '/' ? pathname === '/' : pathname === href || pathname.startsWith(href + '/');
 	}
 </script>
 
 <aside
-	class="fixed top-0 left-0 z-10 flex h-screen flex-col border-r border-[var(--color-sidebar-border)] bg-[var(--color-sidebar)]"
+	class="top-0 left-0 fixed z-10 flex h-screen flex-col border-r border-[var(--color-sidebar-border)] bg-[var(--color-sidebar)]"
 >
 	<!-- Logo -->
 	<div
-		class="flex h-[var(--header-height)] shrink-0 items-center border-b border-[var(--color-sidebar-border)] px-4"
+		class="px-4 flex h-[var(--header-height)] shrink-0 items-center border-b border-[var(--color-sidebar-border)]"
 	>
-		<div class="flex items-center gap-2.5">
+		<div class="gap-2.5 flex items-center">
 			<div
-				class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--color-accent)]"
+				class="h-7 w-7 rounded-lg flex shrink-0 items-center justify-center bg-[var(--color-accent)]"
 			>
 				<span class="text-xs font-bold text-white">N</span>
 			</div>
 			<span
 				class="sidebar-label text-sm font-semibold tracking-tight text-[var(--color-sidebar-text-active)]"
-				>Novelity Admin</span
+				>{title}</span
 			>
 		</div>
 	</div>
 
 	<!-- Navigation -->
-	<nav class="flex-1 overflow-y-auto px-2 py-2">
+	<nav class="px-2 py-2 flex-1 overflow-y-auto">
 		{#each navigation as item (item.href)}
 			<SidebarItem
 				href={item.href}
@@ -45,13 +47,13 @@
 	</nav>
 
 	<!-- User chip + dropdown -->
-	<UserMenu />
+	{#if userMenu}{@render userMenu()}{/if}
 
 	<!-- Bottom -->
 	<div
-		class="sidebar-label border-t border-[var(--color-sidebar-border)] px-4 py-2 text-[10px] text-[var(--color-sidebar-text)] opacity-50"
+		class="sidebar-label px-4 py-2 border-t border-[var(--color-sidebar-border)] text-[10px] text-[var(--color-sidebar-text)] opacity-50"
 	>
-		Novelity v{__APP_VERSION__}
+		Novelity v{version}
 	</div>
 </aside>
 
