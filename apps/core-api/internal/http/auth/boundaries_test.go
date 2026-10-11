@@ -146,6 +146,24 @@ func TestAdminSessionIsolationAndRevocation(t *testing.T) {
 	if rec := h.do("GET", "/api/auth/me", []*http.Cookie{admin}); rec.Code != 200 {
 		t.Fatalf("admin rejected: %d", rec.Code)
 	}
+
+	// Reads must not extend the absolute expiry, even just before the deadline.
+	originalNow := h.svc.now
+	var expires time.Time
+	for _, sess := range h.repo.sessions {
+		if sess.Audience == "admin" {
+			expires = sess.ExpiresAt
+		}
+	}
+	h.svc.now = func() time.Time { return expires.Add(-time.Second) }
+	if rec := h.do("GET", "/api/auth/me", []*http.Cookie{admin}); rec.Code != 200 {
+		t.Fatalf("admin expired early: %d", rec.Code)
+	}
+	h.svc.now = func() time.Time { return expires }
+	if rec := h.do("GET", "/api/auth/me", []*http.Cookie{admin}); rec.Code != 401 {
+		t.Fatalf("admin absolute TTL extended: %d", rec.Code)
+	}
+	h.svc.now = originalNow
 	h.svc.cfg.AdminEmails = nil
 	if rec := h.do("GET", "/api/auth/me", []*http.Cookie{admin}); rec.Code != 403 {
 		t.Fatalf("admin not revoked: %d", rec.Code)
