@@ -181,3 +181,5 @@
 {"ts":"2026-10-11T15:02:38Z","id":"nn-4oyg.yds","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"in_progress","to":"review"}
 {"ts":"2026-10-11T15:02:38Z","id":"nn-4oyg.p1n","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"in_progress","to":"review"}
 {"ts":"2026-10-11T15:02:38Z","id":"nn-4oyg.hzv","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"in_progress","to":"review"}
+{"ts":"2026-10-11T15:03:24Z","id":"nn-4oyg.ant","kind":"create","by":"Raven","by_email":"raven@buzzni.com","title":"review — 검증 지적 정리"}
+{"ts":"2026-10-11T15:03:28Z","id":"nn-4oyg.ant","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"todo","to":"in_progress"}
