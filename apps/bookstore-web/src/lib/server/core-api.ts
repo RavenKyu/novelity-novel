@@ -1,5 +1,7 @@
 // This helper owns the only credential-bearing server transport. Neither the
 // request Host nor a caller-supplied URL can select its upstream origin.
+import { upstreamRequest } from './transport.ts';
+
 export interface ApiConfig {
 	apiOrigin: string;
 	bookstoreOrigin: string;
@@ -48,7 +50,7 @@ export async function coreApiRequest(
 	path: string,
 	request: Request,
 	init: RequestInit = {},
-	fetcher: typeof fetch = fetch
+	fetcher: (target: URL, init: RequestInit) => Promise<Response> = upstreamRequest
 ): Promise<Response> {
 	const origin = configuredOrigin(config.apiOrigin);
 	const bookstore = configuredOrigin(config.bookstoreOrigin);

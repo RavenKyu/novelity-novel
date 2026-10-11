@@ -1,8 +1,42 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { createServer } from 'node:http';
+import { once } from 'node:events';
+import type { AddressInfo } from 'node:net';
 import { coreApiRequest, configuredOrigin, publicCookies } from './core-api.ts';
 
 const config = { apiOrigin: 'http://core-api:8080', bookstoreOrigin: 'https://novelity.kr' };
+
+test('real transport preserves Host, multiple cookies and manual redirects on Node 22', async () => {
+	let calls = 0;
+	const server = createServer((request, response) => {
+		calls++;
+		assert.equal(request.headers.host, 'novelity.kr');
+		assert.equal(request.headers.cookie, 'nn_session=public');
+		response.writeHead(302, {
+			location: '/elsewhere',
+			'set-cookie': ['nn_session=new; Path=/', 'nn_oauth=; Max-Age=0']
+		});
+		response.end();
+	});
+	server.listen(0, '127.0.0.1');
+	await once(server, 'listening');
+	try {
+		const apiOrigin = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;
+		const response = await coreApiRequest(
+			{ ...config, apiOrigin },
+			'/api/auth/google/login',
+			new Request('https://novelity.kr/', { headers: { cookie: 'nn_session=public' } })
+		);
+		assert.equal(response.status, 302);
+		assert.equal(response.headers.getSetCookie().length, 2);
+		await response.text();
+		assert.equal(calls, 1);
+	} finally {
+		server.closeAllConnections();
+		await new Promise<void>((resolve) => server.close(() => resolve()));
+	}
+});
 
 test('only the configured API gets public cookies, with the configured bookstore Host', async () => {
 	let calls = 0;
