@@ -20,7 +20,7 @@ export default defineConfig({
 		})
 	],
 	server: {
-		// Same origin as the web container, so PUBLIC_URL and the Google redirect URI stay valid.
+		// Same origin as the web container, so STUDIO_URL and the Google redirect URI stay valid.
 		port: Number(process.env.WEB_PORT) || 8000,
 		strictPort: true,
 		// Local dev: forward API calls to core-api (nginx does this in containers).

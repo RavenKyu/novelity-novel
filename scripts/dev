@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Local development: MongoDB in docker compose, core-api and web as host processes
+# Local development: MongoDB in docker compose, core-api and studio-web as host processes
 # that reload on file changes.
 #   scripts/dev       both, one terminal (prefixed output, Ctrl-C stops both)
 #   scripts/dev api   core-api only: air rebuilds and restarts it on *.go changes (:8080)
-#   scripts/dev web   web only: vite dev server with HMR (:${WEB_PORT:-8000}, /api → :8080)
+#   scripts/dev studio   studio only: vite dev server with HMR (:${WEB_PORT:-8000}, /api → :8080)
 # Needs Docker, Go (brew install go) and Node. Reads .env from the repo root.
 set -euo pipefail
 

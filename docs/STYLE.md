@@ -1,4 +1,4 @@
-# Style Guide (admin web)
+# Style Guide (작가·관리자 공통 UI)
 
 > 마지막 갱신: 2026-10-09
 > 출처: argos 프론트엔드(`argos/frontend/src/app.css`, `lib/components/layout/*`, `lib/components/ui/*`)의 스타일을 차용했다.
@@ -91,3 +91,5 @@
 
 flowbite-svelte는 기능 컴포넌트(모달, 드롭다운, 테이블, 폼 등)로 쓰고, 겉모양은 위 토큰으로 맞춘다.
 앱 셸(사이드바·헤더·본문)은 argos 구조를 그대로 따르기 위해 자체 컴포넌트로 만들었다.
+
+Decided in: nn-l4cg

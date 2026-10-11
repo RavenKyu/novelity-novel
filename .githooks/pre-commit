@@ -3,8 +3,8 @@
 #
 # Modeled on aplus-dev-studio-desktop's hook. The full suite belongs to CI
 # (.github/workflows/verify-pull-request.yml); locally we keep commits fast:
-#   - apps/core-api staged → go vet + go test (store tests need MONGO_TEST_URI, skipped otherwise)
-#   - apps/studio-web staged      → npm run check + npm run lint
+#   - apps/core-api staged → go vet + go test (Mongo tests need MONGO_TEST_URI, skipped otherwise)
+#   - web apps/shared packages staged → workspace type checks + lint
 #   - e2e                  → only staged tests/e2e/*.spec.ts plus E2E_SPEC_FILES, never the whole suite,
 #                            against the running app (npm run dev)
 #
