@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
-# Local development: MongoDB in docker compose, core-api and web as host processes
+# Local development: MongoDB in docker compose, core-api and studio-web as host processes
 # that reload on file changes.
 #   scripts/dev       both, one terminal (prefixed output, Ctrl-C stops both)
 #   scripts/dev api   core-api only: air rebuilds and restarts it on *.go changes (:8080)
-#   scripts/dev web   web only: vite dev server with HMR (:${WEB_PORT:-8000}, /api → :8080)
+#   scripts/dev studio   studio only: vite dev server with HMR (:${WEB_PORT:-8000}, /api → :8080)
 # Needs Docker, Go (brew install go) and Node. Reads .env from the repo root.
 set -euo pipefail
 
@@ -35,18 +35,18 @@ api)
 	cd apps/core-api
 	exec "$air_dir/air"
 	;;
-web)
-	[ -d apps/web/node_modules ] || fail "apps/web/node_modules missing — run: (cd apps/web && npm ci)"
-	cd apps/web
+studio | web)
+	[ -x node_modules/.bin/vite ] || fail "workspace dependencies missing — run: npm ci"
+	cd apps/studio-web
 	exec npm run dev
 	;;
 all)
 	[ -x node_modules/.bin/concurrently ] || fail "node_modules missing — run: npm ci"
-	exec node_modules/.bin/concurrently --kill-others --names api,web --prefix-colors blue,magenta \
-		"scripts/dev api" "scripts/dev web"
+	exec node_modules/.bin/concurrently --kill-others --names api,studio --prefix-colors blue,magenta \
+		"scripts/dev api" "scripts/dev studio"
 	;;
 *)
-	echo "usage: scripts/dev [api|web]" >&2
+	echo "usage: scripts/dev [api|studio]" >&2
 	exit 2
 	;;
 esac

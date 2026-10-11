@@ -3,10 +3,10 @@ import { test, expect } from '@playwright/test';
 test('anonymous visitor is sent to /login', async ({ page }) => {
 	await page.goto('/');
 	await expect(page).toHaveURL(/\/login$/);
-	await expect(page.getByRole('heading', { name: 'Novelity Admin' })).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Novelity Studio' })).toBeVisible();
 	await expect(page.getByRole('link', { name: 'Google로 로그인' })).toHaveAttribute(
 		'href',
-		'/api/auth/google/login'
+		'/api/auth/google/login?returnTo=%2F'
 	);
 });
 

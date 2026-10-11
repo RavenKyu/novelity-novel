@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 # Release helpers for .github/workflows/prepare-release.yml and publish-release.yml.
-# One version for the whole repo: git tag vX.Y.Z, mirrored in apps/web/package.json.
+# One version for the whole repo: git tag vX.Y.Z, mirrored in apps/studio-web/package.json.
 #
 #   scripts/release version <auto|patch|minor|major> [target]
 #       Next version, as GITHUB_OUTPUT lines: version=X.Y.Z, previous=<last tag or empty>, level=…
 #       auto picks the level from the labels of PRs merged into develop since the last tag:
 #       breaking → major (minor before 1.0), feature → minor, otherwise patch.
-#       Without any tag, the first release is the version in apps/web/package.json.
+#       Without any tag, the first release is the version in apps/studio-web/package.json.
 #   scripts/release changelog <X.Y.Z> <notes.md>
 #       Prepend a "## vX.Y.Z — date (KST)" section built from GitHub's generated notes to CHANGELOG.md.
 #   scripts/release notes <X.Y.Z>
@@ -63,7 +63,7 @@ cmd_version() {
 	case "$requested" in auto | patch | minor | major) ;; *) fail "bump must be auto, patch, minor or major" ;; esac
 	previous=$(latest_tag)
 	if [ -z "$previous" ]; then
-		next=$(node -p "require('./apps/web/package.json').version")
+		next=$(node -p "require('./apps/studio-web/package.json').version")
 		level=initial
 		if [ "$requested" != auto ]; then
 			next=$(bump "$next" "$requested")

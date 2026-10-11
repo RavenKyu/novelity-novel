@@ -1,18 +1,26 @@
 {
 	"name": "novelity-novel",
 	"private": true,
-	"description": "Repo-level tooling: dev runner, e2e tests and git hooks. Apps live in apps/*.",
+	"description": "Workspace apps, shared packages and repository tooling.",
 	"type": "module",
 	"scripts": {
 		"dev": "scripts/dev",
 		"dev:api": "scripts/dev api",
-		"dev:web": "scripts/dev web",
+		"dev:web": "scripts/dev studio",
 		"test:e2e": "playwright test --config tests/e2e/playwright.config.ts",
 		"test:e2e:install": "playwright install chromium",
-		"hooks:install": "git config core.hooksPath .githooks"
+		"hooks:install": "git config core.hooksPath .githooks",
+		"check": "npm run check --workspaces --if-present",
+		"lint": "npm run lint --workspaces --if-present",
+		"build": "npm run build --workspaces --if-present",
+		"dev:studio": "scripts/dev studio"
 	},
 	"devDependencies": {
 		"@playwright/test": "1.63.0",
 		"concurrently": "10.0.6"
-	}
+	},
+	"workspaces": [
+		"apps/*-web",
+		"packages/*"
+	]
 }

@@ -1,4 +1,4 @@
-# Build the service images (nn-core-api-server, nn-web-server).
+# Build the service images (nn-core-api-server, nn-studio-web-server).
 #
 # Status: build only. There is no container registry yet, so the images are built
 # (which proves the Dockerfiles still work on main) and then discarded. Everything
@@ -45,8 +45,10 @@ jobs:
         include:
           - image: nn-core-api-server
             context: apps/core-api
-          - image: nn-web-server
-            context: apps/web
+            dockerfile: apps/core-api/Dockerfile
+          - image: nn-studio-web-server
+            context: .
+            dockerfile: apps/studio-web/Dockerfile
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -76,6 +78,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
           push: false
           tags: ${{ matrix.image }}:ci
           cache-from: type=gha,scope=${{ matrix.image }}
