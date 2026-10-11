@@ -23,8 +23,14 @@ export default defineConfig({
 		// Same origin as the web container, so ADMIN_URL and the Google redirect URI stay valid.
 		port: Number(process.env.ADMIN_PORT) || 8002,
 		strictPort: true,
-		// Local dev: forward API calls to core-api (nginx does this in containers).
 		host: '127.0.0.1',
-		proxy: { '/api': process.env.ADMIN_CORE_API_URL || 'http://localhost:8081' }
+		// Local dev: forward API calls to core-api (nginx does this in containers). Keep the
+		// browser's Host: core-api picks the space from it, and the string shorthand rewrites it.
+		proxy: {
+			'/api': {
+				target: process.env.ADMIN_CORE_API_URL || 'http://localhost:8081',
+				changeOrigin: false
+			}
+		}
 	}
 });
