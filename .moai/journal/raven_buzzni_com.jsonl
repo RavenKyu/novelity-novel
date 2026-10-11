@@ -61,3 +61,4 @@
 {"ts":"2026-10-11T12:40:22Z","id":"nn-l4cg.iub","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"review","to":"done"}
 {"ts":"2026-10-11T12:40:22Z","id":"nn-l4cg.k5g","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"review","to":"done"}
 {"ts":"2026-10-11T12:40:22Z","id":"nn-l4cg.j1t","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"in_progress","to":"done","note":"findings 1·2·3과 기존 e2e 기대값 모두 수정·검증. milestone/nn-5p12 merge 3d93e1f1982bc455919e2525eb760b253799c4af. 넘긴 미해결 finding 없음."}
+{"ts":"2026-10-11T12:40:23Z","id":"nn-l4cg","kind":"note","by":"Raven","by_email":"raven@buzzni.com","text":"Next: 세 공간 기반은 milestone/nn-5p12에 병합되어 완료(3d93e1f1982bc455919e2525eb760b253799c4af). 남은 이 에픽 멤버·새 backlog 없음. nn-aa6i 서점 골격과 nn-w097 관리자 골격은 ADR-002와 packages/ui·api-client, origin/surface/audience 계약을 따라 이어간다. 작가 신청·필명은 기존 작가 기능 계획에서 부여하며 이번 에픽은 reader 셸 접근을 유지했다. 작업 워크트리·브랜치와 테스트 스택 정리, 실행 중 작업 없음."}
