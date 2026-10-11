@@ -7,6 +7,8 @@
 # Runs for develop (where feature PRs integrate, and where new branches and worktrees
 # start from) as well as main (releases), so a break is caught in the PR that caused it.
 # Its two jobs (core-api, web) are required checks in the main·develop ruleset.
+# workflow_dispatch lets prepare-release.yml run it for the release PR it opens (PRs made
+# with GITHUB_TOKEN don't trigger pull_request runs).
 #
 # `pull_request` checks out the merge of the PR into its base, not the PR head, so
 # two PRs that are green on their own but break together are caught here.
@@ -25,6 +27,7 @@ on:
     branches:
       - main
       - develop
+  workflow_dispatch:
 
 # Cancel superseded runs of the same PR to keep the queue short.
 concurrency:

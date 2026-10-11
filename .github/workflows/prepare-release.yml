@@ -1,0 +1,115 @@
+# Prepare a release: cut release/vX.Y.Z from develop, bump the version, prepend CHANGELOG.md
+# and open the release PR to main. Review (and edit) the bump and CHANGELOG in that PR;
+# merging it publishes the release (publish-release.yml).
+#
+# Run from Actions → Prepare release → Run workflow. `auto` takes the level from the labels
+# of the PRs merged into develop since the last tag (scripts/release).
+#
+# develop and main only take PRs, so the bump lives on a release branch. PRs and pushes made
+# with GITHUB_TOKEN don't trigger other workflows; workflow_dispatch is the exception, so the
+# required checks (and e2e) are started here explicitly. Needs the repository setting
+# "Allow GitHub Actions to create and approve pull requests".
+name: Prepare release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'auto: from PR labels since the last tag (breaking · feature · fix)'
+        type: choice
+        options:
+          - auto
+          - patch
+          - minor
+          - major
+        default: auto
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+# Explicit bash runs steps with -eo pipefail (the implicit default has no pipefail).
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout develop
+        uses: actions/checkout@v4
+        with:
+          ref: develop
+          # Tags and full history: the version range and which PRs fall in it.
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Next version
+        id: version
+        env:
+          BUMP: ${{ inputs.bump }}
+        run: scripts/release version "$BUMP" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Release notes
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          PREVIOUS: ${{ steps.version.outputs.previous }}
+        run: |
+          args=(-f "tag_name=v$VERSION" -f target_commitish=develop)
+          if [ -n "$PREVIOUS" ]; then args+=(-f "previous_tag_name=$PREVIOUS"); fi
+          gh api "repos/$GITHUB_REPOSITORY/releases/generate-notes" "${args[@]}" --jq .body > "$RUNNER_TEMP/notes.md"
+
+      - name: Bump version and CHANGELOG
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          (cd apps/web && npm version "$VERSION" --no-git-tag-version --allow-same-version)
+          scripts/release changelog "$VERSION" "$RUNNER_TEMP/notes.md"
+          git diff --stat
+
+      - name: Push release branch
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git switch -c "release/v$VERSION"
+          git add apps/web/package.json apps/web/package-lock.json CHANGELOG.md
+          git commit -m "[structural] 릴리스 v$VERSION: 버전·CHANGELOG"
+          git push origin "release/v$VERSION"
+
+      - name: Open release PR
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          PREVIOUS: ${{ steps.version.outputs.previous }}
+          LEVEL: ${{ steps.version.outputs.level }}
+        run: |
+          {
+            echo "## Release v$VERSION"
+            echo
+            echo "- 이전 버전: ${PREVIOUS:-없음 (첫 릴리스)} · bump: \`$LEVEL\`"
+            echo "- 버전과 CHANGELOG.md를 확인하세요. 고칠 내용은 이 브랜치(\`release/v$VERSION\`)에 push하면 됩니다."
+            echo "- **merge commit으로 병합하세요** (squash·rebase 금지). 병합하면 태그 v$VERSION, GitHub Release, 이미지 빌드, develop 동기화 PR이 자동으로 진행됩니다."
+            echo
+            echo "## CHANGELOG"
+            echo
+            scripts/release notes "$VERSION"
+          } > "$RUNNER_TEMP/body.md"
+          gh pr create --base main --head "release/v$VERSION" --title "Release v$VERSION" \
+            --label release --body-file "$RUNNER_TEMP/body.md"
+          # The PR came from GITHUB_TOKEN, so no pull_request run starts on its own.
+          gh workflow run verify-pull-request.yml --ref "release/v$VERSION"
+          gh workflow run e2e.yml --ref "release/v$VERSION"

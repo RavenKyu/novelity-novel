@@ -1,0 +1,66 @@
+# Publish a release when its release PR (release/vX.Y.Z → main, from prepare-release.yml)
+# is merged: tag the merge commit, publish the GitHub Release with that version's
+# CHANGELOG.md section, start the image build, and sync develop with main.
+#
+# The tag is created with GITHUB_TOKEN, which doesn't trigger build-images.yml's tag push,
+# so the build is started with workflow_dispatch. The main → develop PR is set to auto-merge
+# (merge commit): its required checks come from the verify run of the merge push to main.
+# Needs the repository settings "Allow GitHub Actions to create and approve pull requests"
+# and "Allow auto-merge".
+name: Publish release
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+
+# Explicit bash runs steps with -eo pipefail (the implicit default has no pipefail).
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  publish:
+    if: >-
+      github.event.pull_request.merged == true &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      startsWith(github.event.pull_request.head.ref, 'release/v')
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      HEAD_REF: ${{ github.event.pull_request.head.ref }}
+      MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+    steps:
+      - name: Checkout merge commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Version
+        run: |
+          tag="${HEAD_REF#release/}"
+          [[ $tag =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::not a release branch: $HEAD_REF"; exit 1; }
+          echo "TAG=$tag" >> "$GITHUB_ENV"
+
+      - name: GitHub Release
+        run: |
+          scripts/release notes "${TAG#v}" > "$RUNNER_TEMP/notes.md"
+          [ -s "$RUNNER_TEMP/notes.md" ] || { echo "::error::CHANGELOG.md has no section for $TAG"; exit 1; }
+          gh release create "$TAG" --target "$MERGE_SHA" --title "$TAG" --notes-file "$RUNNER_TEMP/notes.md"
+
+      - name: Build images
+        run: gh workflow run build-images.yml --ref "$TAG"
+
+      - name: Sync develop
+        run: |
+          url=$(gh pr create --base develop --head main --title "Sync $TAG → develop" --label release \
+            --body "릴리스 $TAG의 버전 bump와 CHANGELOG를 develop에 반영한다. 필수 검사가 통과하면 merge commit으로 자동 병합된다.")
+          gh pr merge "$url" --auto --merge
