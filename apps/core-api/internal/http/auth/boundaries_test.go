@@ -261,3 +261,39 @@ func TestExistingSessionReturnsAcrossSpacesWithoutGoogle(t *testing.T) {
 		t.Fatal("existing session bypasses origin validation")
 	}
 }
+
+func TestRevokedAdminCanChooseAnotherAccount(t *testing.T) {
+	h := newHarness(t)
+	h.svc.cfg.Surfaces = []string{"admin"}
+	h.svc.cfg.Origins = map[string]string{"admin": "http://studio.test"}
+	h.svc.cfg.AdminEmails = []string{"writer@example.com"}
+	rec := h.do("GET", "/api/auth/google/login", nil)
+	q := h.idp.authorize(t, rec.Header().Get("Location"))
+	rec = h.do("GET", "/api/auth/google/callback?"+q.Encode(), []*http.Cookie{cookie(rec, "nn_admin_oauth")})
+	admin := cookie(rec, AdminSessionCookie)
+	if admin == nil {
+		t.Fatal("no admin cookie")
+	}
+	rec = h.do("GET", "/api/auth/me", []*http.Cookie{admin})
+	if rec.Code != 200 || rec.Header().Get("Cache-Control") != "private, no-store" {
+		t.Fatalf("admin identity may be cached: %d %s", rec.Code, rec.Header().Get("Cache-Control"))
+	}
+	rec = h.do("GET", "/api/auth/google/login?returnTo=/users", []*http.Cookie{admin})
+	if rec.Header().Get("Location") != "/users" || cookie(rec, "nn_admin_oauth") != nil {
+		t.Fatal("valid admin didn't reuse session")
+	}
+	h.svc.cfg.AdminEmails = nil
+	rec = h.do("GET", "/api/auth/google/login?returnTo=/users", []*http.Cookie{admin})
+	if rec.Code != 302 || cookie(rec, "nn_admin_oauth") == nil {
+		t.Fatalf("revoked admin cannot choose account: %s", rec.Header().Get("Location"))
+	}
+	authz, _ := url.Parse(rec.Header().Get("Location"))
+	if authz.Query().Get("prompt") != "select_account" {
+		t.Fatalf("no account selector: %s", authz)
+	}
+	q = h.idp.authorize(t, rec.Header().Get("Location"))
+	rec = h.do("GET", "/api/auth/google/callback?"+q.Encode(), []*http.Cookie{cookie(rec, "nn_admin_oauth")})
+	if cookie(rec, AdminSessionCookie) != nil || !strings.HasPrefix(rec.Header().Get("Location"), "/login?error=forbidden") {
+		t.Fatal("revoked account regained access")
+	}
+}

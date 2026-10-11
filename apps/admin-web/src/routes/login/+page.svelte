@@ -43,7 +43,7 @@
 
 			{#if error}
 				<div
-					class="mt-6 rounded-lg border border-[#ffc9c9] bg-[var(--color-error-bg)] px-3 py-2 text-xs text-[var(--color-error)]"
+					class="mt-6 rounded-lg border border-[var(--color-error)] bg-[var(--color-error-bg)] px-3 py-2 text-xs text-[var(--color-error)]"
 				>
 					{error}
 				</div>
@@ -52,7 +52,7 @@
 			<a
 				href={googleLoginUrl(page.url.searchParams.get('returnTo') ?? '/')}
 				data-sveltekit-reload
-				class="mt-6 flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--color-input-border)] bg-white py-2.5 text-sm font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)]"
+				class="mt-6 flex w-full items-center justify-center gap-2 rounded-lg border border-[var(--color-input-border)] bg-[var(--color-surface)] py-2.5 text-sm font-semibold text-[var(--color-text-primary)] hover:bg-[var(--color-surface-hover)]"
 			>
 				<svg width="15" height="15" viewBox="0 0 18 18" aria-hidden="true">
 					<path
