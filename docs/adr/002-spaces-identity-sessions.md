@@ -29,7 +29,9 @@ core-api는 identity, studio, catalog, library, moderation 도메인으로 나�
 
 ### 역할
 
-users.roles는 복수 역할 배열이다. reader는 기본 역할이며 기존 roles 없는 사용자도 reader로 읽는다. author는 작가 신청과 필명 프로필 기능이 부여한다. 이번 에픽은 신청·필명 기능이나 자동 author 승격을 만들지 않는다. 기존 작가 셸은 세션만 요구하고, 후속 작가 기능의 권한은 RequireSession 위에 RequireRole(author)를 쌓는다.
+users.roles는 복수 역할 배열이다. reader는 기본 역할이며 기존 roles 없는 사용자도 reader로 읽는다. 작업실 기능(AI 편집자·어시스트, 조판, 집필 도구)은 RequireSession으로 로그인만 요구하며 작가 신청이나 author 역할을 요구하지 않는다. 작업실 요금은 예정되어 있지만 지금 설계하지 않으며, 추후 이용 자격 검사를 별도로 추가할 수 있도록 한다. author는 서점에 발행할 자격이다. 작가 신청과 필명 프로필은 발행할 때 필요하며, 해당 기능이 author를 부여한다. RequireRole(author)는 발행 관련 기능에만 RequireSession 위에 쌓는다. 이번 에픽은 신청·필명 기능이나 자동 author 승격을 만들지 않는다.
+
+2026-10-11 정정(nn-fbp6): 작업실은 핵심 제품이므로 작가 신청 뒤로 잠그지 않고, author를 서점 발행 자격으로 한정했다(사용자 결정).
 
 admin은 ADMIN_EMAILS 환경변수에 나열한 이메일 허용 목록으로 결정한다. Google이 검증한 이메일로 가입한 사용자만 대상이며 요청마다 현재 허용 목록으로 유효 역할을 계산해 목록에서 제거하면 기존 세션에서도 권한을 잃는다. 저장된 admin 문자열만으로 관리자 권한을 부여하지 않는다. reader·author와 admin은 서로 배타적이지 않다.
 
