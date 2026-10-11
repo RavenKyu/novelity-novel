@@ -152,3 +152,4 @@
 {"ts":"2026-10-11T14:16:03Z","id":"nn-w097.fe0","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"review","to":"done"}
 {"ts":"2026-10-11T14:16:03Z","id":"nn-w097.5xi","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"review","to":"done"}
 {"ts":"2026-10-11T14:16:03Z","id":"nn-w097.sn1","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"in_progress","to":"done","note":"P1 계정 전환, P2 identity 캐시, P3 기본 자산을 f7b1e2d에 반영하고 관련 테스트·pre-commit·최종 이미지/e2e를 확인했다. 넘긴 finding 없음. milestone 병합 완료."}
+{"ts":"2026-10-11T14:17:13Z","id":"nn-w097","kind":"note","by":"Raven","by_email":"raven@buzzni.com","text":"Next: 관리자 골격 구현·검증·max 전체 diff 리뷰를 마치고 milestone/nn-5p12에 d1e41c1bf554466f991c40341a843567a91d6a6b로 병합했다. 남은 member·backlog·실행 중 작업 없음. 운영 VPN/IP 허용 목록·TLS 내부 게이트웨이는 배포 환경 확정 후 nn-w097.5xi 메모를 따른다."}
