@@ -4,8 +4,8 @@ import (
 	"github.com/labstack/echo/v5"
 	"github.com/labstack/echo/v5/middleware"
 
-	"novelity-novel/core-api/internal/auth"
 	"novelity-novel/core-api/internal/handler"
+	"novelity-novel/core-api/internal/http/auth"
 )
 
 // Deps are the collaborators routes need.

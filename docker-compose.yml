@@ -34,6 +34,7 @@ services:
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       SESSION_TTL: ${SESSION_TTL:-168h}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
     expose:
       - "8080"
     depends_on:

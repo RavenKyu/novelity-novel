@@ -1,5 +1,5 @@
 // Package auth implements Google sign-in (OIDC authorization code flow with
-// PKCE) and cookie sessions backed by a Repo.
+// PKCE) and cookie sessions backed by an identity.Repo.
 package auth
 
 import (
@@ -20,6 +20,8 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/labstack/echo/v5"
 	"golang.org/x/oauth2"
+
+	"novelity-novel/core-api/internal/identity"
 )
 
 const (
@@ -36,50 +38,15 @@ const (
 	GoogleIssuer = "https://accounts.google.com"
 )
 
-// ErrNoSession means the token matches no live session.
-var ErrNoSession = errors.New("auth: no session")
-
-type User struct {
-	ID          string    `json:"id"`
-	Email       string    `json:"email"`
-	Name        string    `json:"name"`
-	Picture     string    `json:"picture"`
-	CreatedAt   time.Time `json:"createdAt"`
-	LastLoginAt time.Time `json:"lastLoginAt"`
-}
-
-// Profile is the identity Google vouched for in a verified id_token.
-type Profile struct {
-	Subject string
-	Email   string
-	Name    string
-	Picture string
-}
-
-type Session struct {
-	TokenHash string
-	UserID    string
-	CreatedAt time.Time
-	ExpiresAt time.Time
-}
-
-type Repo interface {
-	// UpsertGoogleUser creates the user on first sign-in, otherwise refreshes its profile.
-	UpsertGoogleUser(ctx context.Context, p Profile, now time.Time) (User, error)
-	CreateSession(ctx context.Context, s Session) error
-	// SessionUser returns the session's user, or ErrNoSession if missing or expired at now.
-	SessionUser(ctx context.Context, tokenHash string, now time.Time) (User, error)
-	DeleteSession(ctx context.Context, tokenHash string) error
-}
-
 type Config struct {
 	ClientID     string
 	ClientSecret string
 	// Issuer is the OIDC issuer; GoogleIssuer in production.
 	Issuer string
 	// PublicURL is the browser-facing origin, e.g. http://localhost:8000.
-	PublicURL  string
-	SessionTTL time.Duration
+	PublicURL   string
+	SessionTTL  time.Duration
+	AdminEmails []string
 }
 
 // Enabled reports whether Google credentials are configured.
@@ -89,7 +56,7 @@ func (c Config) secureCookies() bool { return strings.HasPrefix(c.PublicURL, "ht
 
 type Service struct {
 	cfg  Config
-	repo Repo
+	repo identity.Repo
 	now  func() time.Time
 
 	mu       sync.Mutex
@@ -97,7 +64,7 @@ type Service struct {
 	verifier *oidc.IDTokenVerifier
 }
 
-func New(cfg Config, repo Repo) *Service {
+func New(cfg Config, repo identity.Repo) *Service {
 	return &Service{cfg: cfg, repo: repo, now: time.Now}
 }
 
@@ -198,7 +165,7 @@ func (s *Service) callback(c *echo.Context) error {
 	}
 
 	now := s.now()
-	user, err := s.repo.UpsertGoogleUser(ctx, Profile{
+	user, err := s.repo.UpsertGoogleUser(ctx, identity.Profile{
 		Subject: idt.Subject, Email: claims.Email, Name: claims.Name, Picture: claims.Picture,
 	}, now)
 	if err != nil {
@@ -206,7 +173,7 @@ func (s *Service) callback(c *echo.Context) error {
 		return loginError(c, "server_error")
 	}
 	token := randomToken()
-	if err := s.repo.CreateSession(ctx, Session{
+	if err := s.repo.CreateSession(ctx, identity.Session{
 		TokenHash: hashToken(token), UserID: user.ID, CreatedAt: now, ExpiresAt: now.Add(s.cfg.SessionTTL),
 	}); err != nil {
 		slog.Error("create session", "err", err)
@@ -253,20 +220,20 @@ func (s *Service) RequireSession(next echo.HandlerFunc) echo.HandlerFunc {
 			return unauthorized(c)
 		}
 		user, err := s.repo.SessionUser(c.Request().Context(), hashToken(ck.Value), s.now())
-		if errors.Is(err, ErrNoSession) {
+		if errors.Is(err, identity.ErrNoSession) {
 			return unauthorized(c)
 		}
 		if err != nil {
 			return err
 		}
-		c.Set(userKey, user)
+		c.Set(userKey, identity.EffectiveRoles(user, s.cfg.AdminEmails))
 		return next(c)
 	}
 }
 
 // CurrentUser returns the user RequireSession attached to c.
-func CurrentUser(c *echo.Context) User {
-	u, _ := c.Get(userKey).(User)
+func CurrentUser(c *echo.Context) identity.User {
+	u, _ := c.Get(userKey).(identity.User)
 	return u
 }
 
@@ -299,4 +266,20 @@ func randomToken() string {
 func hashToken(token string) string {
 	sum := sha256.Sum256([]byte(token))
 	return hex.EncodeToString(sum[:])
+}
+
+// RequireRole is stacked after RequireSession; authentication and authorization stay distinct.
+func RequireRole(role identity.Role) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c *echo.Context) error {
+			user := CurrentUser(c)
+			if user.ID == "" {
+				return unauthorized(c)
+			}
+			if !user.HasRole(role) {
+				return c.JSON(http.StatusForbidden, map[string]string{"error": "forbidden"})
+			}
+			return next(c)
+		}
+	}
 }

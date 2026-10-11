@@ -1,24 +1,24 @@
-// Package store owns the MongoDB connection and the collections built on it.
-package store
+// Package mongo owns the MongoDB connection and the collections built on it.
+package mongo
 
 import (
 	"context"
 	"fmt"
 
-	"go.mongodb.org/mongo-driver/v2/mongo"
+	driver "go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.mongodb.org/mongo-driver/v2/mongo/readpref"
 )
 
 type Store struct {
-	client *mongo.Client
-	db     *mongo.Database
+	client *driver.Client
+	db     *driver.Database
 }
 
 // Connect opens a client to uri and selects database name. The driver connects
 // lazily, so an unreachable server surfaces on first use (and in Ping), not here.
 func Connect(uri, name string) (*Store, error) {
-	client, err := mongo.Connect(options.Client().ApplyURI(uri))
+	client, err := driver.Connect(options.Client().ApplyURI(uri))
 	if err != nil {
 		return nil, fmt.Errorf("mongo connect: %w", err)
 	}

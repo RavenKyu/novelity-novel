@@ -10,10 +10,10 @@ import (
 
 	"github.com/labstack/echo/v5"
 
-	"novelity-novel/core-api/internal/auth"
-	"novelity-novel/core-api/internal/config"
+	"novelity-novel/core-api/internal/http/auth"
+	"novelity-novel/core-api/internal/platform/config"
+	store "novelity-novel/core-api/internal/platform/mongo"
 	"novelity-novel/core-api/internal/server"
-	"novelity-novel/core-api/internal/store"
 )
 
 func main() {
@@ -51,6 +51,7 @@ func run() error {
 		Issuer:       auth.GoogleIssuer,
 		PublicURL:    cfg.PublicURL,
 		SessionTTL:   cfg.SessionTTL,
+		AdminEmails:  cfg.AdminEmails,
 	}
 	if !authCfg.Enabled() {
 		slog.Warn("GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET not set; Google login is disabled")

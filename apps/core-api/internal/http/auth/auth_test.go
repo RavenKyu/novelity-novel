@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/sha256"
@@ -10,6 +11,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"novelity-novel/core-api/internal/identity"
 	"strings"
 	"sync"
 	"testing"
@@ -113,46 +115,46 @@ func (idp *fakeIdP) authorize(t *testing.T, location string) url.Values {
 
 type memRepo struct {
 	mu       sync.Mutex
-	users    map[string]User // by googleSub
-	sessions map[string]Session
+	users    map[string]identity.User // by googleSub
+	sessions map[string]identity.Session
 }
 
 func newMemRepo() *memRepo {
-	return &memRepo{users: map[string]User{}, sessions: map[string]Session{}}
+	return &memRepo{users: map[string]identity.User{}, sessions: map[string]identity.Session{}}
 }
 
-func (m *memRepo) UpsertGoogleUser(_ context.Context, p Profile, now time.Time) (User, error) {
+func (m *memRepo) UpsertGoogleUser(_ context.Context, p identity.Profile, now time.Time) (identity.User, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	u, ok := m.users[p.Subject]
 	if !ok {
-		u = User{ID: "u" + p.Subject, CreatedAt: now}
+		u = identity.User{ID: "u" + p.Subject, CreatedAt: now}
 	}
 	u.Email, u.Name, u.Picture, u.LastLoginAt = p.Email, p.Name, p.Picture, now
 	m.users[p.Subject] = u
 	return u, nil
 }
 
-func (m *memRepo) CreateSession(_ context.Context, s Session) error {
+func (m *memRepo) CreateSession(_ context.Context, s identity.Session) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.sessions[s.TokenHash] = s
 	return nil
 }
 
-func (m *memRepo) SessionUser(_ context.Context, tokenHash string, now time.Time) (User, error) {
+func (m *memRepo) SessionUser(_ context.Context, tokenHash string, now time.Time) (identity.User, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	s, ok := m.sessions[tokenHash]
 	if !ok || !now.Before(s.ExpiresAt) {
-		return User{}, ErrNoSession
+		return identity.User{}, identity.ErrNoSession
 	}
 	for _, u := range m.users {
 		if u.ID == s.UserID {
 			return u, nil
 		}
 	}
-	return User{}, ErrNoSession
+	return identity.User{}, identity.ErrNoSession
 }
 
 func (m *memRepo) DeleteSession(_ context.Context, tokenHash string) error {
@@ -316,5 +318,30 @@ func TestLoginNotConfigured(t *testing.T) {
 	e.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/auth/google/login", nil))
 	if got := rec.Header().Get("Location"); got != "/login?error=not_configured" {
 		t.Fatalf("redirect = %q, want /login?error=not_configured", got)
+	}
+}
+
+func TestRequireRole(t *testing.T) {
+	e := echo.New()
+	e.GET("/author", func(c *echo.Context) error { return c.NoContent(http.StatusOK) }, func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c *echo.Context) error {
+			switch c.QueryParam("user") {
+			case "reader":
+				c.Set(userKey, identity.User{ID: "u", Roles: []identity.Role{identity.Reader}})
+			case "author":
+				c.Set(userKey, identity.User{ID: "u", Roles: []identity.Role{identity.Reader, identity.Author}})
+			}
+			return next(c)
+		}
+	}, RequireRole(identity.Author))
+	for _, tc := range []struct {
+		user string
+		want int
+	}{{"", 401}, {"reader", 403}, {"author", 200}} {
+		rec := httptest.NewRecorder()
+		e.ServeHTTP(rec, httptest.NewRequest("GET", "/author?user="+tc.user, nil))
+		if rec.Code != tc.want {
+			t.Fatalf("%s: %d, want %d", tc.user, rec.Code, tc.want)
+		}
 	}
 }

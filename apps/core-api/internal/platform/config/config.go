@@ -3,6 +3,7 @@ package config
 import (
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -18,6 +19,7 @@ type Config struct {
 	GoogleClientID     string
 	GoogleClientSecret string
 	SessionTTL         time.Duration
+	AdminEmails        []string
 }
 
 // Load reads configuration from environment variables.
@@ -30,6 +32,7 @@ func Load() Config {
 		PublicURL:          env("PUBLIC_URL", "http://localhost:8000"),
 		GoogleClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 		GoogleClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+		AdminEmails:        strings.Split(os.Getenv("ADMIN_EMAILS"), ","),
 		SessionTTL:         duration("SESSION_TTL", 7*24*time.Hour),
 	}
 }
