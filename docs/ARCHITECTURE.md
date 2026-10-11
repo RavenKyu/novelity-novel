@@ -83,5 +83,6 @@ MongoDB `novelity` DB. 시작 시 EnsureIndexes로 인덱스를 멱등 생성한
 
 - [ADR-001](adr/001-google-oidc-mongo-sessions.md) Google OIDC 로그인과 MongoDB 서버 세션
 - [ADR-002](adr/002-spaces-identity-sessions.md) 세 공간과 identity·역할·세션 경계
+- [ADR-003](adr/003-assist-typeset-storage-publishing.md) AI 에이전트·조판·파일 저장소·발행 경계 (설계, 구현은 후속 마일스톤)
 
 Decided in: nn-l4cg, nn-aa6i
