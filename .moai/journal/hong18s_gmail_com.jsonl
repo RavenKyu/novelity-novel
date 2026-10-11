@@ -65,3 +65,5 @@
 {"ts":"2026-10-11T15:34:37Z","id":"nn-pjr4","kind":"status","by":"Raven","by_email":"hong18s@gmail.com","from":"in_progress","to":"done","note":"docs/local-check.md, CONVENTIONS 링크. 병합 b9e313e"}
 {"ts":"2026-10-11T15:52:05Z","id":"nn-3l3y","kind":"create","by":"Raven","by_email":"hong18s@gmail.com","title":"release: Unreleased 부제를 버전 절 소제목으로 남기기"}
 {"ts":"2026-10-11T15:52:06Z","id":"nn-3l3y","kind":"status","by":"Raven","by_email":"hong18s@gmail.com","from":"todo","to":"in_progress"}
+{"ts":"2026-10-11T15:54:04Z","id":"nn-3l3y","kind":"note","by":"Raven","by_email":"hong18s@gmail.com","text":"model: anthropic/claude-opus-5-5 (medium — 릴리스 스크립트 한 함수와 테스트; macOS awk·mawk·gawk 세 곳에서 test-release 통과, 고치기 전 스크립트로는 4건 실패, 실제 CHANGELOG로 notes 맨 위에 \"### 세 공간 분리\" 확인. 콜론 구분자를 위해 Unreleased 제목 패턴에 \":\"를 더함)"}
+{"ts":"2026-10-11T15:54:04Z","id":"nn-3l3y","kind":"status","by":"Raven","by_email":"hong18s@gmail.com","from":"in_progress","to":"done","note":"병합 2a145fc"}
