@@ -12,9 +12,9 @@ core-api 명령은 `scripts/go`로 실행한다. 로컬에 `go`가 있으면 그
 | 관련 테스트 | `cd apps/core-api && ../../scripts/go test ./internal/<pkg>/...` |
 | 린트·포맷 | `cd apps/core-api && ../../scripts/go vet ./... && ../../scripts/go fmt ./...` · `npm run lint` (수정: `npm run format --workspace @novelity/studio-web`, 공통 패키지는 `npm exec -- prettier --write packages`) |
 | 타입 검사 | `npm run check` |
-| 빌드 | `npm run build` · `docker compose --profile app build` |
+| 빌드 | `npm run build` · `docker compose --profile app --profile admin build` (admin-web 이미지는 admin 프로필에서만 빌드된다) |
 | 개발 실행 | 최초 1회 `brew install go`, `cp .env.example .env` 후 값 입력, 루트에서 `npm ci` → `npm run dev` → http://localhost:8000 (`WEB_PORT`로 변경). 서점은 http://localhost:8001 (`BOOKSTORE_PORT`로 변경), 관리자는 http://localhost:8002 (`ADMIN_PORT`로 변경). 따로 띄우려면 `npm run dev:api` / `npm run dev:studio` / `npm run dev:bookstore` / `npm run dev:admin-api` / `npm run dev:admin` |
-| 컨테이너 실행 | `docker compose --profile app up -d --build` (공개 운영 유사 구성. 관리자도 띄우려면 `--profile admin`을 함께 지정한다. 개발 서버와 8000·8001 포트를 같이 쓰므로 동시에 띄우지 않는다) |
+| 컨테이너 실행 | `docker compose --profile app up -d --build` (공개 운영 유사 구성. 관리자도 띄우려면 `--profile admin`을 함께 지정한다. 개발 서버와 8000·8001(관리자 프로필은 8002) 포트를 같이 쓰므로 동시에 띄우지 않는다) |
 | e2e (Playwright) | 최초 1회 `npm ci && npm run test:e2e:install` → 앱 실행(`npm run dev`) 후 `npm run test:e2e` (관련 spec만: `npx playwright test --config tests/e2e/playwright.config.ts tests/e2e/<name>.spec.ts`) |
 | 워크플로 린트 | `docker run --rm -v "$PWD":/repo -w /repo rhysd/actionlint:1.7.7` |
 | 스모크 | `curl -s localhost:8000/api/healthz` → `{"status":"ok"}` (Mongo 불통 시 503) |

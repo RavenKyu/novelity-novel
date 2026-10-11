@@ -41,6 +41,9 @@ if printf '%s\n' "$staged" | grep -qE '^(apps/[^/]+-web/|packages/|package(-lock
  echo "pre-commit: web workspace changed → type checks, prettier"
  npm run --silent check || fail "workspace type checks failed"
  npm run --silent lint || fail "workspace format checks failed"
+ if printf '%s\n' "$staged" | grep -qE '^(packages/api-client/|package(-lock)?\.json$)'; then
+  npm test --workspace @novelity/api-client || fail "api-client tests failed"
+ fi
  if printf '%s\n' "$staged" | grep -qE '^(apps/bookstore-web/|packages/|package(-lock)?\.json$)'; then
   npm test --workspace @novelity/bookstore-web || fail "bookstore transport tests failed"
  fi

@@ -20,7 +20,7 @@ Novelity는 작가 공간, 독자 서점, 시스템 관리자 공간으로 나�
 - `nn-core-api-server`: Go·Echo v5 API. compose 내부망에만 노출하며 studio,store만 등록한다. admin 라우트가 없는 것이 기본값이다.
 - `nn-mongodb`: MongoDB 8.0. 사용자·세션을 저장한다. 호스트에는 127.0.0.1:27017로만 노출한다.
 
-관리자는 동일 바이너리를 `--surfaces=admin`으로 별도 실행하고 내부망에 배치한다. 공개·관리자 그룹을 함께 선택하면 기동을 거절한다. 관리자 웹·compose 인스턴스와 실제 접근 제한은 nn-w097에서 구현한다. /api/auth와 /api/healthz는 어느 인스턴스에서도 공통으로 등록한다.
+관리자는 동일 바이너리를 `--surfaces=admin`으로 별도 실행하고 내부망에 배치한다. 공개·관리자 그룹을 함께 선택하면 기동을 거절한다. 관리자 웹과 전용 compose 인스턴스(admin 프로필)는 구현되어 있고, 운영 VPN·IP 허용 목록 같은 실제 접근 제한은 배포 환경 확정 뒤에 정한다. /api/auth와 /api/healthz는 어느 인스턴스에서도 공통으로 등록한다.
 
 브라우저는 자기 웹의 /api 프록시로 같은 출처 요청을 한다. 서점은 서버 전용 전송 함수를 통해 CORE_API_URL로 직접 연결한다. 요청 Host나 URL로 API 대상을 선택하지 않으며 nn_session·nn_oauth만 전달한다. Node HTTP 전송은 구성된 BOOKSTORE_URL의 Host를 보존하고 TLS 연결은 API 대상에 맞춘다. 리디렉션을 따라가지 않고 OAuth Location·여러 Set-Cookie를 브라우저에 돌려준다. Origin·Referer·Fetch Metadata도 보존해 API의 상태 변경 검증을 유지한다.
 
