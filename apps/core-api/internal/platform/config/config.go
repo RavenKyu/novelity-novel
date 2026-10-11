@@ -72,10 +72,11 @@ func (c Config) Validate(surfaces []string) error {
 		if err != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") || u.User != nil || u.RawQuery != "" || u.Fragment != "" || u.Path != "" {
 			return fmt.Errorf("%s URL must be an http(s) origin without path, query or credentials", surface)
 		}
-		if hosts[u.Host] {
+		host := normalizedHost(u)
+		if hosts[host] {
 			return fmt.Errorf("surface origins must have distinct hosts (including ports)")
 		}
-		hosts[u.Host] = true
+		hosts[host] = true
 		if surface != "admin" && c.SessionDomain != "" {
 			if u.Scheme != "https" || (u.Hostname() != c.SessionDomain && !strings.HasSuffix(u.Hostname(), "."+c.SessionDomain)) {
 				return fmt.Errorf("SESSION_DOMAIN must contain every public HTTPS origin")
@@ -83,6 +84,20 @@ func (c Config) Validate(surfaces []string) error {
 		}
 	}
 	return nil
+}
+
+// normalizedHost lower-cases the host and drops a default port, so that
+// http://studio.test and http://STUDIO.test:80 compare equal.
+func normalizedHost(u *url.URL) string {
+	port := u.Port()
+	if (u.Scheme == "http" && port == "80") || (u.Scheme == "https" && port == "443") {
+		port = ""
+	}
+	host := strings.ToLower(u.Hostname())
+	if port == "" {
+		return host
+	}
+	return net.JoinHostPort(host, port)
 }
 
 func duration(key string, fallback time.Duration) time.Duration {
