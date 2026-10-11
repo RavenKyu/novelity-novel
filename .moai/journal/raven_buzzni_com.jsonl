@@ -132,3 +132,6 @@
 {"ts":"2026-10-11T13:27:17Z","id":"nn-gvs7","kind":"note","by":"Raven","by_email":"raven@buzzni.com","text":"Report-checked: ac61fc843f66f2be958881cc37229877259ca18b"}
 {"ts":"2026-10-11T13:27:17Z","id":"nn-gvs7","kind":"note","by":"Raven","by_email":"raven@buzzni.com","text":"펼칠 때 주의: 구현 백로그 6개(nn-akqp, nn-idcj, nn-g9il, nn-5pzy, nn-zub6, nn-qsfu)는 -e nn-gvs7로 붙어 있어, promote하면 이 에픽의 마일스톤(세 공간 분리)을 물려받는다. 새 마일스톤으로 펼칠 때는 먼저 moai edit <id> -e none 하거나 새 마일스톤을 명시한다."}
 {"ts":"2026-10-11T13:28:32Z","id":"nn-w097","kind":"note","by":"Raven","by_email":"raven@buzzni.com","text":"Sent: codex-1 (Codex, cmux surface 98178FC0, GPT-6.1-Sol high) — 감독자 novelity-novel-1c"}
+{"ts":"2026-10-11T13:29:04Z","id":"nn-w097.asy","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"todo","to":"in_progress"}
+{"ts":"2026-10-11T13:29:04Z","id":"nn-w097.fe0","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"todo","to":"in_progress"}
+{"ts":"2026-10-11T13:29:04Z","id":"nn-w097.5xi","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"todo","to":"in_progress"}
