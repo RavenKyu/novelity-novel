@@ -112,5 +112,11 @@ jobs:
       - name: Bookstore server transport tests
         run: npm test --workspace @novelity/bookstore-web
 
+      - name: Install Chromium for admin guard tests
+        run: npx playwright install --with-deps chromium
+
+      - name: Admin SPA guard tests
+        run: npm test --workspace @novelity/admin-web
+
       - name: Build
         run: npm run build

@@ -1,4 +1,4 @@
-# Build the service images (core-api, studio-web, bookstore-web).
+# Build the service images (core-api, studio-web, bookstore-web, admin-web).
 #
 # Status: build only. There is no container registry yet, so the images are built
 # (which proves the Dockerfiles still work on main) and then discarded. Everything
@@ -52,6 +52,9 @@ jobs:
           - image: nn-bookstore-web-server
             context: .
             dockerfile: apps/bookstore-web/Dockerfile
+          - image: nn-admin-web-server
+            context: .
+            dockerfile: apps/admin-web/Dockerfile
     steps:
       - name: Checkout
         uses: actions/checkout@v4

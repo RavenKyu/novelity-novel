@@ -14,7 +14,9 @@
 		"lint": "npm run lint --workspaces --if-present",
 		"build": "npm run build --workspaces --if-present",
 		"dev:studio": "scripts/dev studio",
-		"dev:bookstore": "scripts/dev bookstore"
+		"dev:bookstore": "scripts/dev bookstore",
+		"dev:admin": "scripts/dev admin",
+		"dev:admin-api": "scripts/dev admin-api"
 	},
 	"devDependencies": {
 		"@playwright/test": "1.63.0",

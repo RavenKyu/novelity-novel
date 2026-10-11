@@ -76,7 +76,7 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          npm version "$VERSION" --workspace @novelity/studio-web --workspace @novelity/bookstore-web --no-git-tag-version --allow-same-version
+          npm version "$VERSION" --workspace @novelity/studio-web --workspace @novelity/bookstore-web --workspace @novelity/admin-web --no-git-tag-version --allow-same-version
           scripts/release changelog "$VERSION" "$RUNNER_TEMP/notes.md"
           git diff --stat
 
