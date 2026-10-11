@@ -70,3 +70,6 @@
 {"ts":"2026-10-11T12:49:36Z","id":"nn-t7mw","kind":"create","by":"Raven","by_email":"raven@buzzni.com","title":"AI 에이전트·조판·발행 기반 설계 (ADR-003)"}
 {"ts":"2026-10-11T12:49:42Z","id":"nn-aa6i","kind":"note","by":"Raven","by_email":"raven@buzzni.com","text":"Sent: codex-2 (Codex, cmux surface 04E5FEA3, GPT-6.1-Sol high) — 감독자 novelity-novel-1c"}
 {"ts":"2026-10-11T12:49:42Z","id":"nn-fbp6","kind":"note","by":"Raven","by_email":"raven@buzzni.com","text":"Sent: codex-1 (Codex, cmux surface 98178FC0, GPT-6.1-Sol high) — 감독자 novelity-novel-1c"}
+{"ts":"2026-10-11T12:50:45Z","id":"nn-aa6i.680","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"todo","to":"in_progress"}
+{"ts":"2026-10-11T12:50:46Z","id":"nn-aa6i.ogv","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"todo","to":"in_progress"}
+{"ts":"2026-10-11T12:50:46Z","id":"nn-aa6i.gii","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"todo","to":"in_progress"}
