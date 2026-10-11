@@ -57,7 +57,12 @@ export function localReturnTo(value: string | null): string {
     return "/";
   try {
     const url = new URL(value, "https://local.invalid");
-    if (url.origin !== "https://local.invalid" || url.pathname === "/login")
+    // Dot segments can collapse into a scheme-relative "//host" path ("/..//evil.test").
+    if (
+      url.origin !== "https://local.invalid" ||
+      url.pathname === "/login" ||
+      url.pathname.startsWith("//")
+    )
       return "/";
     return url.pathname + url.search + url.hash;
   } catch {

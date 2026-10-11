@@ -42,8 +42,13 @@ test("local navigation rejects external and malformed return paths", () => {
     "/\\evil.test/",
     "/login",
     "/\n/evil.test",
+    "/..//evil.test",
+    "/.//evil.test",
+    "/%2e%2e//evil.test",
+    "/x/..//evil.test",
   ])
     assert.equal(localReturnTo(value), "/");
+  assert.equal(localReturnTo("/a/../works"), "/works");
   assert.equal(
     localReturnTo("/works?tab=draft#chapter"),
     "/works?tab=draft#chapter",
