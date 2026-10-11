@@ -26,3 +26,15 @@ func TestOriginValidation(t *testing.T) {
 		}
 	}
 }
+
+func TestListenerAddress(t *testing.T) {
+	t.Setenv("PORT", "8081")
+	t.Setenv("BIND_HOST", "127.0.0.1")
+	if got := Load().Addr; got != "127.0.0.1:8081" {
+		t.Fatalf("loopback listener: %s", got)
+	}
+	t.Setenv("BIND_HOST", "")
+	if got := Load().Addr; got != ":8081" {
+		t.Fatalf("container listener: %s", got)
+	}
+}

@@ -40,9 +40,9 @@ export interface SeededUser {
   token: string;
 }
 
-export function seedSession(name = "E2E 작가"): SeededUser {
+export function seedSession(name = "E2E 작가", options: { audience?: "public" | "admin"; email?: string } = {}): SeededUser {
   const sub = `e2e-${randomBytes(6).toString("hex")}`;
-  const email = `${sub}@example.com`;
+  const email = options.email ?? `${sub}@example.com`;
   const token = randomBytes(32).toString("base64url");
   const hash = createHash("sha256").update(token).digest("hex");
   mongosh(`
@@ -53,7 +53,7 @@ export function seedSession(name = "E2E 작가"): SeededUser {
 			{ $set: { email: ${JSON.stringify(email)}, name: ${JSON.stringify(name)}, picture: '', lastLoginAt: now },
 			  $setOnInsert: { createdAt: now, roles: ['reader'] } },
 			{ upsert: true, returnDocument: 'after' });
-		d.sessions.insertOne({ audience: 'public', _id: ${JSON.stringify(hash)}, userId: u._id, createdAt: now,
+		d.sessions.insertOne({ audience: ${JSON.stringify(options.audience ?? "public")}, _id: ${JSON.stringify(hash)}, userId: u._id, createdAt: now,
 			expiresAt: new Date(now.getTime() + 3600e3) });
 	`);
   return { sub, email, name, token };
