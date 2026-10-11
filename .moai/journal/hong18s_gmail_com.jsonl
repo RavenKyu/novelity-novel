@@ -54,3 +54,16 @@
 {"ts":"2026-10-09T15:10:14Z","id":"nn-jk9v.4qr","kind":"status","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","from":"in_progress","to":"done","note":"사용자 확인: 실제 Google 계정(hong18s@gmail.com) 로그인 성공(2026-10-09 13:49 세션 생성). 자동 검증은 go test·e2e로 완료"}
 {"ts":"2026-10-09T15:20:18Z","id":"nn-1sgn","kind":"create","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","title":"집필 일정 관리"}
 {"ts":"2026-10-09T15:20:18Z","id":"nn-1sgn","kind":"note","by":"Dukkyu Lim","by_email":"hong18s@gmail.com","text":"moai web server 버전 출시 대기"}
+{"ts":"2026-10-11T15:26:20Z","id":"nn-pjr4","kind":"create","by":"Raven","by_email":"hong18s@gmail.com","title":"wiki: 브랜치를 로컬에서 직접 확인하기"}
+{"ts":"2026-10-11T15:26:24Z","id":"nn-pjr4","kind":"status","by":"Raven","by_email":"hong18s@gmail.com","from":"todo","to":"in_progress"}
+{"ts":"2026-10-11T15:29:22Z","id":"nn-pjr4.4u8","kind":"create","by":"Raven","by_email":"hong18s@gmail.com","title":"dev 프록시가 Host를 바꿔 작업실·관리자 로그인 실패"}
+{"ts":"2026-10-11T15:29:22Z","id":"nn-pjr4.4u8","kind":"status","by":"Raven","by_email":"hong18s@gmail.com","from":"todo","to":"in_progress"}
+{"ts":"2026-10-11T15:34:37Z","id":"nn-pjr4.4u8","kind":"note","by":"Raven","by_email":"hong18s@gmail.com","text":"model: anthropic/claude-opus-5-5 (medium — 두 vite 프록시 설정 변경, scratch에서 API·vite를 띄워 재현하고 고친 뒤 npm run dev 위 e2e까지 확인; 감독자 세션이 위키 작업 중 직접 발견·수정)"}
+{"ts":"2026-10-11T15:34:37Z","id":"nn-pjr4","kind":"note","by":"Raven","by_email":"hong18s@gmail.com","text":"model: anthropic/claude-opus-5-5 (low — 위키 가이드 한 쪽과 CONVENTIONS 링크; 명령은 모두 실제로 돌려 확인)"}
+{"ts":"2026-10-11T15:34:37Z","id":"nn-pjr4","kind":"note","by":"Raven","by_email":"hong18s@gmail.com","text":"검증: 격리 compose 프로젝트(nn-pjr4-e2e, Mongo 27131)로 npm run dev 다섯 프로세스 13초 기동, 문서의 curl 확인 전부 기대값(healthz ok, 공개 admin 404, 인코딩 공백 302, //evil.test 400, 로그인 302 not_configured), e2e 16 passed + 1 flaky(서점 로그아웃, 첫 컴파일 지연 추정), 같은 spec --repeat-each=5 --retries=0 15/15. 사용자 개발용 Mongo는 건드리지 않음. 병합 b9e313e"}
+{"ts":"2026-10-11T15:34:37Z","id":"nn-pjr4.4u8","kind":"status","by":"Raven","by_email":"hong18s@gmail.com","from":"in_progress","to":"done","note":"병합 b9e313e에 포함"}
+{"ts":"2026-10-11T15:34:37Z","id":"nn-pjr4","kind":"status","by":"Raven","by_email":"hong18s@gmail.com","from":"in_progress","to":"done","note":"docs/local-check.md, CONVENTIONS 링크. 병합 b9e313e"}
+{"ts":"2026-10-11T15:52:05Z","id":"nn-3l3y","kind":"create","by":"Raven","by_email":"hong18s@gmail.com","title":"release: Unreleased 부제를 버전 절 소제목으로 남기기"}
+{"ts":"2026-10-11T15:52:06Z","id":"nn-3l3y","kind":"status","by":"Raven","by_email":"hong18s@gmail.com","from":"todo","to":"in_progress"}
+{"ts":"2026-10-11T15:54:04Z","id":"nn-3l3y","kind":"note","by":"Raven","by_email":"hong18s@gmail.com","text":"model: anthropic/claude-opus-5-5 (medium — 릴리스 스크립트 한 함수와 테스트; macOS awk·mawk·gawk 세 곳에서 test-release 통과, 고치기 전 스크립트로는 4건 실패, 실제 CHANGELOG로 notes 맨 위에 \"### 세 공간 분리\" 확인. 콜론 구분자를 위해 Unreleased 제목 패턴에 \":\"를 더함)"}
+{"ts":"2026-10-11T15:54:04Z","id":"nn-3l3y","kind":"status","by":"Raven","by_email":"hong18s@gmail.com","from":"in_progress","to":"done","note":"병합 2a145fc"}
