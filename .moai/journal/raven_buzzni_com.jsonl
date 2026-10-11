@@ -135,3 +135,5 @@
 {"ts":"2026-10-11T13:29:04Z","id":"nn-w097.asy","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"todo","to":"in_progress"}
 {"ts":"2026-10-11T13:29:04Z","id":"nn-w097.fe0","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"todo","to":"in_progress"}
 {"ts":"2026-10-11T13:29:04Z","id":"nn-w097.5xi","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"todo","to":"in_progress"}
+{"ts":"2026-10-11T13:40:39Z","id":"nn-w097.5xi","kind":"note","by":"Raven","by_email":"raven@buzzni.com","text":"배포 환경 미정: compose는 admin 전용 네트워크와 loopback 웹 진입점만 제공한다. 운영 VPN·IP 허용 목록·TLS 내부 게이트웨이는 배포 환경 확정 후 정한다. 공개 프록시에 관리자 upstream을 연결하지 않는다."}
+{"ts":"2026-10-11T13:43:02Z","id":"nn-8mf2","kind":"create","by":"Raven","by_email":"raven@buzzni.com","title":"Bun 도입 재검토"}
