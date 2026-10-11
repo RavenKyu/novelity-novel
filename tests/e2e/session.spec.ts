@@ -49,7 +49,9 @@ test("public deployment has no admin API routes", async ({ page }) => {
   expect((await page.request.get("/api/store/healthz")).status()).toBe(200);
 });
 
-test("signed-in cross-space returnTo is validated by the API", async ({
+// The API stubbed here is not under test: only the SPA hand-off is. The API-side
+// validation lives in the Go test TestExistingSessionReturnsAcrossSpacesWithoutGoogle.
+test("signed-in login forwards a cross-space returnTo to the API unchanged", async ({
   page,
   user,
 }) => {

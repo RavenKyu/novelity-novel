@@ -1,6 +1,8 @@
 package auth
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"net/http"
@@ -36,6 +38,51 @@ func TestReturnToValidation(t *testing.T) {
 		rec := h.do("GET", "/api/auth/google/login?"+url.Values{"returnTo": {target}}.Encode(), nil)
 		if rec.Code != http.StatusBadRequest {
 			t.Fatalf("accepted %q: %d", target, rec.Code)
+		}
+	}
+}
+
+// A correctly signed flow cookie whose returnTo is no longer acceptable must still be refused
+// at the callback: takeFlow validates returnTo again.
+func TestCallbackRevalidatesReturnTo(t *testing.T) {
+	h := newHarness(t)
+	rec := h.do("GET", "/api/auth/google/login?returnTo=/works", nil)
+	flow := cookie(rec, flowCookie)
+	q := h.idp.authorize(t, rec.Header().Get("Location"))
+	parts := strings.Split(flow.Value, ".")
+	payload, _ := base64.RawURLEncoding.DecodeString(parts[0])
+	var f loginFlow
+	json.Unmarshal(payload, &f)
+	f.ReturnTo = "https://evil.test/"
+	payload, _ = json.Marshal(f)
+	encoded := base64.RawURLEncoding.EncodeToString(payload)
+	mac := hmac.New(sha256.New, h.svc.flowKey)
+	mac.Write([]byte(encoded))
+	flow.Value = encoded + "." + base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+	rec = h.do("GET", "/api/auth/google/callback?"+q.Encode(), []*http.Cookie{flow})
+	if cookie(rec, SessionCookie) != nil || len(h.repo.sessions) != 0 || !strings.HasPrefix(rec.Header().Get("Location"), "/login?error=invalid_state") {
+		t.Fatalf("callback accepted a signed flow with a bad returnTo: %d %s", rec.Code, rec.Header().Get("Location"))
+	}
+}
+
+func TestSameOriginFetchMetadata(t *testing.T) {
+	h := newHarness(t)
+	sess := cookie(h.login(t, nil), SessionCookie)
+	for site, want := range map[string]int{"cross-site": 403, "same-site": 403, "same-origin": 204, "none": 204, "": 204} {
+		h := h
+		if want == 204 {
+			h = newHarness(t)
+			sess = cookie(h.login(t, nil), SessionCookie)
+		}
+		req := httptest.NewRequest("POST", "http://studio.test/api/auth/logout", nil)
+		req.AddCookie(sess)
+		if site != "" {
+			req.Header.Set("Sec-Fetch-Site", site)
+		}
+		rec := httptest.NewRecorder()
+		h.e.ServeHTTP(rec, req)
+		if rec.Code != want {
+			t.Fatalf("Sec-Fetch-Site %q without Origin/Referer: %d, want %d", site, rec.Code, want)
 		}
 	}
 }

@@ -27,6 +27,17 @@ func TestOriginValidation(t *testing.T) {
 	}
 }
 
+func TestDuplicateOriginHostsRejected(t *testing.T) {
+	cfg := Config{Origins: map[string]string{"studio": "http://localhost:8000", "store": "http://localhost:8000"}}
+	if err := cfg.Validate([]string{"studio", "store"}); err == nil {
+		t.Fatal("accepted two surfaces on the same host and port")
+	}
+	cfg.Origins["store"] = "http://localhost:8001"
+	if err := cfg.Validate([]string{"studio", "store"}); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestListenerAddress(t *testing.T) {
 	t.Setenv("PORT", "8081")
 	t.Setenv("BIND_HOST", "127.0.0.1")
