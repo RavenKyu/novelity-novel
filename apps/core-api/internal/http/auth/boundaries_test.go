@@ -66,14 +66,9 @@ func TestCallbackRevalidatesReturnTo(t *testing.T) {
 }
 
 func TestSameOriginFetchMetadata(t *testing.T) {
-	h := newHarness(t)
-	sess := cookie(h.login(t, nil), SessionCookie)
 	for site, want := range map[string]int{"cross-site": 403, "same-site": 403, "same-origin": 204, "none": 204, "": 204} {
-		h := h
-		if want == 204 {
-			h = newHarness(t)
-			sess = cookie(h.login(t, nil), SessionCookie)
-		}
+		h := newHarness(t)
+		sess := cookie(h.login(t, nil), SessionCookie)
 		req := httptest.NewRequest("POST", "http://studio.test/api/auth/logout", nil)
 		req.AddCookie(sess)
 		if site != "" {
