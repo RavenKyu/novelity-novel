@@ -9,6 +9,7 @@ services:
     ports:
       # Host-local only, for mongosh/Compass.
       - "127.0.0.1:${MONGO_PORT:-27017}:27017"
+    networks: [database]
     volumes:
       - mongo-data:/data/db
     healthcheck:
@@ -34,12 +35,13 @@ services:
       BOOKSTORE_URL: ${BOOKSTORE_URL:-http://localhost:8001}
       ADMIN_URL: ${ADMIN_URL:-http://localhost:8002}
       SESSION_DOMAIN: ${SESSION_DOMAIN:-}
-      # Explicit public selection; admin runs in a separate instance in nn-w097.
+      # Public API never mounts /api/admin.
       API_SURFACES: studio,store
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       SESSION_TTL: ${SESSION_TTL:-168h}
       ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+    networks: [public, database]
     expose:
       - "8080"
     depends_on:
@@ -53,6 +55,7 @@ services:
       context: .
       dockerfile: apps/studio-web/Dockerfile
     image: nn-studio-web-server:local
+    networks: [public]
     ports:
       - "${WEB_PORT:-8000}:80"
     depends_on:
@@ -65,6 +68,7 @@ services:
       context: .
       dockerfile: apps/bookstore-web/Dockerfile
     image: nn-bookstore-web-server:local
+    networks: [public]
     environment:
       CORE_API_URL: http://nn-core-api-server:8080
       BOOKSTORE_URL: ${BOOKSTORE_URL:-http://localhost:8001}
@@ -80,6 +84,48 @@ services:
       timeout: 10s
       retries: 10
     restart: unless-stopped
+
+  # Opt-in administrator surface. No public web has a route or network to these services.
+  nn-admin-core-api-server:
+    profiles: [admin]
+    build: ./apps/core-api
+    image: nn-core-api-server:local
+    networks: [admin, database]
+    environment:
+      PORT: "8080"
+      MONGO_URI: mongodb://${MONGO_ROOT_USER:-novelity}:${MONGO_ROOT_PASSWORD:-novelity-dev}@nn-mongodb:27017/?authSource=admin
+      MONGO_DB: novelity
+      ADMIN_URL: ${ADMIN_URL:-http://localhost:8002}
+      API_SURFACES: admin
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+    expose: ["8080"]
+    depends_on:
+      nn-mongodb:
+        condition: service_healthy
+    restart: unless-stopped
+
+  nn-admin-web-server:
+    profiles: [admin]
+    build:
+      context: .
+      dockerfile: apps/admin-web/Dockerfile
+    image: nn-admin-web-server:local
+    networks: [admin]
+    # Local/private entry only. A production VPN gateway is configured separately.
+    ports:
+      - "127.0.0.1:${ADMIN_PORT:-8002}:80"
+    depends_on:
+      - nn-admin-core-api-server
+    restart: unless-stopped
+
+networks:
+  public:
+  # Keep outbound access for Google OIDC discovery/token exchange.
+  admin:
+  # A regular bridge preserves the loopback Mongo port for host development.
+  database:
 
 volumes:
   mongo-data:

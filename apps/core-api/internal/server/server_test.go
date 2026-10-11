@@ -54,6 +54,8 @@ func TestOnlySelectedSurfacesAreMounted(t *testing.T) {
 		want     int
 	}{
 		{nil, "/api/admin/healthz", 404},
+		{nil, "/api/admin/users", 404},
+		{[]string{"studio", "store"}, "/api/admin/users", 404},
 		{nil, "/api/store/healthz", 200},
 		{nil, "/api/studio/healthz", 401},
 		{[]string{"store"}, "/api/studio/healthz", 404},
@@ -93,12 +95,34 @@ func TestAdminSurfaceAuthorization(t *testing.T) {
 		repo := sessionRepo{identity.User{ID: "u", Email: "admin@example.com", Roles: []identity.Role{identity.Reader, identity.Admin}}}
 		svc := auth.New(auth.Config{Origins: map[string]string{"admin": "https://admin.novelity.kr"}, Surfaces: []string{"admin"}, AdminEmails: tc.allow}, repo)
 		e := New(Deps{DB: fakePinger{}, Auth: svc, Surfaces: []string{"admin"}})
-		req := httptest.NewRequest("GET", "https://admin.novelity.kr/api/admin/healthz", nil)
+		req := httptest.NewRequest("GET", "https://admin.novelity.kr/api/admin/users", nil)
 		req.AddCookie(&http.Cookie{Name: auth.AdminSessionCookie, Value: "admin-token"})
 		rec := httptest.NewRecorder()
 		e.ServeHTTP(rec, req)
+		if tc.want == 200 && (rec.Body.String() != "{\"users\":[]}\n" || rec.Header().Get("Cache-Control") != "private, no-store") {
+			t.Fatalf("invalid skeleton response: %s", rec.Body.String())
+		}
 		if rec.Code != tc.want {
 			t.Fatalf("allow %v: %d, want %d", tc.allow, rec.Code, tc.want)
+		}
+	}
+}
+
+func TestAdminRejectsPublicSessionAndUnknownHost(t *testing.T) {
+	repo := sessionRepo{identity.User{ID: "u", Email: "admin@example.com"}}
+	svc := auth.New(auth.Config{Origins: map[string]string{"admin": "https://admin.novelity.kr"}, Surfaces: []string{"admin"}, AdminEmails: []string{"admin@example.com"}}, repo)
+	e := New(Deps{DB: fakePinger{}, Auth: svc, Surfaces: []string{"admin"}})
+	for _, tc := range []struct{ host, cookie string }{
+		{"admin.novelity.kr", ""},
+		{"admin.novelity.kr", "nn_session=public-token"},
+		{"studio.novelity.kr", "nn_admin_session=admin-token"},
+	} {
+		req := httptest.NewRequest("GET", "https://"+tc.host+"/api/admin/users", nil)
+		req.Header.Set("Cookie", tc.cookie)
+		rec := httptest.NewRecorder()
+		e.ServeHTTP(rec, req)
+		if rec.Code != http.StatusUnauthorized {
+			t.Fatalf("%+v: %d", tc, rec.Code)
 		}
 	}
 }

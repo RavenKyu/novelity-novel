@@ -4,16 +4,17 @@
 
 ## 시스템 개요
 
-Novelity는 작가 공간, 독자 서점, 시스템 관리자 공간으로 나뉜다. 웹은 독립 앱 세 개를 지향하며 API는 도메인별 모듈을 가진 core-api 하나다. 현재 작가 앱·SSR 서점 골격과 공통 기반이 구현되었고 관리자 앱은 nn-w097에서 만든다. 공간·도메인·세션 결정은 [ADR-002](adr/002-spaces-identity-sessions.md)에 있다.
+Novelity는 작가 공간, 독자 서점, 시스템 관리자 공간으로 나뉜다. 웹은 독립 앱 세 개이며 API는 도메인별 모듈을 가진 core-api 하나다. 현재 작가 앱·SSR 서점·관리자 SPA 골격과 공통 기반이 구현되어 있다. 공간·도메인·세션 결정은 [ADR-002](adr/002-spaces-identity-sessions.md)에 있다.
 
 | 공간 | 운영 출처 | 웹 | 렌더링 | API |
 |------|-----------|----|--------|-----|
 | 작가 | https://studio.novelity.kr | apps/studio-web | SPA, adapter-static | /api/studio |
 | 독자 서점 | https://novelity.kr | apps/bookstore-web | SSR, adapter-node | /api/store |
-| 관리자 | https://admin.novelity.kr | apps/admin-web (후속 골격) | SPA, adapter-static | /api/admin |
+| 관리자 | https://admin.novelity.kr | apps/admin-web | SPA, adapter-static | /api/admin |
 
-개발 중에는 MongoDB만 컨테이너로 띄우고 core-api·작가 웹·서점 웹은 호스트에서 live reload로 실행한다. compose `app` 프로필은 공개 인스턴스(core-api + studio-web + bookstore-web)를 띄운다.
+개발 중에는 MongoDB만 컨테이너로 띄우고 공개 core-api·관리자 core-api·세 웹은 호스트에서 live reload로 실행한다. compose `app` 프로필은 공개 인스턴스(core-api + studio-web + bookstore-web), `admin` 프로필은 관리자 인스턴스(core-api + admin-web)를 띄운다.
 
+- `nn-admin-web-server`: 관리자 nginx SPA, 127.0.0.1:8002 진입점. `/api`를 같은 admin 네트워크의 `nn-admin-core-api-server`로 프록시하며 공개 공간 API를 404로 막는다. 관리자 API는 같은 core-api 이미지에 API_SURFACES=admin만 설정하고 host port를 열지 않는다.
 - `nn-studio-web-server`: nginx가 SPA를 서빙하고 /api 요청을 core-api로 프록시한다. /api/admin 요청은 404로 막는다.
 - `nn-bookstore-web-server`: adapter-node가 SSR과 클라이언트 자산을 서빙하고 공개 /api 요청을 core-api로 프록시한다. /api/admin·/api/studio는 404로 막는다.
 - `nn-core-api-server`: Go·Echo v5 API. compose 내부망에만 노출하며 studio,store만 등록한다. admin 라우트가 없는 것이 기본값이다.
@@ -35,17 +36,20 @@ Novelity는 작가 공간, 독자 서점, 시스템 관리자 공간으로 나�
 | catalog | 공개 스냅샷 도메인 경계 (저장·발행 구현은 후속 기능) | apps/core-api/internal/catalog |
 | 플랫폼 | 환경변수·선택 검증, Mongo 연결·인덱스·identity.Repo 구현 | apps/core-api/internal/platform/{config,mongo} |
 | 공통 health | Mongo ping, 정상 200·불통 503 | apps/core-api/internal/handler |
+| 관리자 라우트 | 로그인·admin 역할 가드·공통 화면 틀·관리자 연결 확인 | apps/admin-web/src/routes, src/lib/auth.svelte.ts |
 | 작가 라우트 | 페이지, /login과 인증 가드, 앱별 세션 상태 | apps/studio-web/src/routes, src/lib/auth.svelte.ts |
 | 서점 라우트·서빙 | SSR 홈·OG·로그인·요청별 세션, 공개 API 프록시, 자체 화면 틀 | apps/bookstore-web/src/routes, src/hooks.server.ts, src/lib/server |
 | 공통 UI | 디자인 토큰, Header·PageContent·Sidebar·SidebarItem·UserMenu | packages/ui |
 | API 클라이언트 | User·Role 타입, me·logout·health fetch 래퍼, 로그인 링크 | packages/api-client |
 | 작가 서빙 | SPA fallback, /api 프록시 | apps/studio-web/nginx.conf |
-| 오케스트레이션 | 공개 인스턴스와 Mongo, opt-in app 프로필 | docker-compose.yml |
-| 개발 실행 | Mongo(compose), API(air), 작가·서점 웹(vite) | scripts/dev, apps/core-api/.air.toml |
+| 오케스트레이션 | 공개·관리자·database 네트워크, opt-in app/admin 프로필 | docker-compose.yml |
+| 개발 실행 | Mongo(compose), 공개·관리자 API(air), 세 웹(vite) | scripts/dev, apps/core-api/.air*.toml |
 | 검증 | 경로별 pre-commit, PR 검증·e2e·이미지 빌드 | .githooks, .github/workflows, tests/e2e |
 | 릴리스 | 단일 버전·CHANGELOG·릴리스 PR·태그·develop 동기화 | scripts/release, .github/workflows/{prepare,publish}-release.yml |
 
-각 공간에는 연결 확인용 GET /api/<surface>/healthz가 있다. 작품·카탈로그·관리 기능의 실제 엔드포인트는 후속 기능에서 추가한다. store에는 OptionalSession이 붙어 쿠키가 없거나 세션이 만료되면 익명으로 통과하고, 유효한 public audience 세션만 사용자로 붙인다. 저장소 오류는 실패 응답으로 구분한다. GET /api/store/session은 `{user: null}` 또는 현재 사용자를 반환한다. 서점은 API 장애에도 공개 홈을 표시하고 로그인 상태 확인 불가를 알린다. 개인별 헤더를 담는 SSR HTML·데이터와 세션 API 응답은 private, no-store다.
+공개 웹은 public 네트워크, 관리자 웹은 admin 네트워크에만 속한다. 두 API와 Mongo만 database 네트워크를 공유한다. admin 네트워크의 외부 연결은 Google OIDC를 위해 유지한다. 운영 VPN·IP 허용 목록·TLS 내부 게이트웨이는 배포 환경 확정 후 정하며, 공개 프록시를 관리자 진입점으로 쓰지 않는다.
+
+각 공간에는 연결 확인용 GET /api/<surface>/healthz가 있다. GET /api/admin/users는 관리자 역할 확인용 빈 `{users: []}` 목록이다. 작품·카탈로그·관리 기능의 실제 엔드포인트는 후속 기능에서 추가한다. store에는 OptionalSession이 붙어 쿠키가 없거나 세션이 만료되면 익명으로 통과하고, 유효한 public audience 세션만 사용자로 붙인다. 저장소 오류는 실패 응답으로 구분한다. GET /api/store/session은 `{user: null}` 또는 현재 사용자를 반환한다. 서점은 API 장애에도 공개 홈을 표시하고 로그인 상태 확인 불가를 알린다. 개인별 헤더를 담는 SSR HTML·데이터와 세션 API 응답은 private, no-store다.
 
 공통 UI는 앱의 `$app`·`$lib`나 세션 상태를 참조하지 않는다. Sidebar는 제목·버전·경로·메뉴·사용자 메뉴 snippet을, UserMenu는 사용자·로그아웃 함수를 받는다. 서점은 토큰과 기본 컴포넌트를 쓰되 Sidebar·Header 화면 틀은 사용하지 않는다. UI는 flowbite-svelte·아이콘과 Tailwind v4를 사용한다([STYLE](STYLE.md)).
 
@@ -60,7 +64,7 @@ Novelity는 작가 공간, 독자 서점, 시스템 관리자 공간으로 나�
 
 Google OIDC 서버 측 code flow는 state·nonce·PKCE를 유지하고 검증된 이메일만 받는다([ADR-001](adr/001-google-oidc-mongo-sessions.md)). OAuth callback URI는 요청 Host가 구성된 공간 출처와 일치할 때 그 출처에서 결정한다. STUDIO_URL·BOOKSTORE_URL·ADMIN_URL 각각의 callback을 Google에 등록한다.
 
-서점·작가는 `nn_session`을 공유한다. 운영 `SESSION_DOMAIN=novelity.kr`로 부모 도메인 쿠키를 발급한다. 관리자 `nn_admin_session`은 host-only, 절대 TTL 2시간이다. 두 쿠키 모두 HttpOnly·SameSite=Lax·Path=/이고 HTTPS 구성에서는 Secure다. 관리자 인스턴스는 공개 쿠키·public audience 토큰을 받지 않는다. 로그아웃은 자기 audience만 지운다.
+서점·작가는 `nn_session`을 공유한다. 운영 `SESSION_DOMAIN=novelity.kr`로 부모 도메인 쿠키를 발급한다. 관리자 `nn_admin_session`은 host-only, 절대 TTL 2시간이다. 두 쿠키 모두 HttpOnly·SameSite=Lax·Path=/이고 HTTPS 구성에서는 Secure다. 관리자 인스턴스는 공개 쿠키·public audience 토큰을 받지 않는다. 로그아웃은 자기 audience만 지운다. GET /api/auth/me와 관리자 users 응답은 private, no-store다. 허용 목록에서 제거된 관리자도 로그인 버튼으로 새 Google 계정을 선택할 수 있으며, 권한이 없는 계정에는 관리자 세션을 발급하지 않는다.
 
 로그인 흐름은 host-only `nn_oauth`(관리자는 `nn_admin_oauth`)에 담고 프로세스별 HMAC 키로 무결성을 보호한다. 만료는 10분이며 returnTo·시작 출처·state·nonce·PKCE verifier가 함께 묶인다. 복귀 주소는 최대 2048바이트이고 최종 흐름 쿠키도 4096바이트 이하만 허용한다. 시작 출처가 다른 콜백이나 변조·만료된 쿠키는 거절한다. 재시작 또는 복제본 변경 중인 로그인은 다시 시작해야 한다. 이미 로그인된 세션의 공간 복귀도 로그인 시작 API에서 같은 출처·audience·역할 검증을 거쳐 바로 이동한다. returnTo는 명시적 허용 출처 또는 안전한 상대 경로만 허용하고 callback에서도 재검증한다. 공개 로그인은 관리자 출처로 복귀할 수 없다.
 
@@ -85,4 +89,4 @@ MongoDB `novelity` DB. 시작 시 EnsureIndexes로 인덱스를 멱등 생성한
 - [ADR-002](adr/002-spaces-identity-sessions.md) 세 공간과 identity·역할·세션 경계
 - [ADR-003](adr/003-assist-typeset-storage-publishing.md) AI 에이전트·조판·파일 저장소·발행 경계 (설계, 구현은 후속 마일스톤)
 
-Decided in: nn-l4cg, nn-aa6i
+Decided in: nn-l4cg, nn-aa6i, nn-w097

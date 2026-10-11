@@ -130,12 +130,13 @@ func (s *Service) login(c *echo.Context) error {
 		user, err := s.repo.SessionUser(c.Request().Context(), hashToken(cookie.Value), s.now(), audience)
 		if err == nil {
 			user = identity.EffectiveRoles(user, s.cfg.AdminEmails)
-			if space == "admin" && !user.HasRole(identity.Admin) {
-				return s.loginError(c, "forbidden", returnTo)
+			// A revoked admin must be able to choose another Google account.
+			// Only a currently authorized session can skip the OIDC flow.
+			if space != "admin" || user.HasRole(identity.Admin) {
+				return c.Redirect(http.StatusFound, returnTo)
 			}
-			return c.Redirect(http.StatusFound, returnTo)
 		}
-		if !errors.Is(err, identity.ErrNoSession) {
+		if err != nil && !errors.Is(err, identity.ErrNoSession) {
 			return err
 		}
 	}
@@ -232,6 +233,7 @@ func (s *Service) callback(c *echo.Context) error {
 }
 
 func (s *Service) me(c *echo.Context) error {
+	c.Response().Header().Set("Cache-Control", "private, no-store")
 	return c.JSON(http.StatusOK, CurrentUser(c))
 }
 

@@ -10,6 +10,8 @@ apps/studio-web/.env
 apps/studio-web/.env.*
 apps/bookstore-web/.env
 apps/bookstore-web/.env.*
+apps/admin-web/.env
+apps/admin-web/.env.*
 
 # Personal tool settings: Claude Code permission allowlist, Serena overrides
 .claude/settings.local.json

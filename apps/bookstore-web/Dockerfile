@@ -3,6 +3,7 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 COPY apps/studio-web/package.json apps/studio-web/package.json
 COPY apps/bookstore-web/package.json apps/bookstore-web/package.json
+COPY apps/admin-web/package.json apps/admin-web/package.json
 COPY packages/ui/package.json packages/ui/package.json
 COPY packages/api-client/package.json packages/api-client/package.json
 RUN npm ci

@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
-# Local development: MongoDB in compose, core-api, studio-web and bookstore-web on the host
+# Local development: MongoDB in compose, core-api, studio-web, bookstore-web and admin-web on the host
 # that reload on file changes.
-#   scripts/dev       all three, one terminal (Ctrl-C stops them together)
+#   scripts/dev       public and admin apps, one terminal (Ctrl-C stops them together)
 #   scripts/dev api   core-api only: air rebuilds and restarts it on *.go changes (:8080)
 #   scripts/dev studio   studio only: vite dev server with HMR (:${WEB_PORT:-8000}, /api → :8080)
 #   scripts/dev bookstore   SSR store only (:${BOOKSTORE_PORT:-8001}, API → CORE_API_URL)
+#   scripts/dev admin-api   admin-only API on loopback (:${ADMIN_API_PORT:-8081})
+#   scripts/dev admin       admin SPA on loopback (:${ADMIN_PORT:-8002})
 # Needs Docker, Go (brew install go) and Node. Reads .env from the repo root.
 set -euo pipefail
 
@@ -22,6 +24,8 @@ fi
 export MONGO_URI="${MONGO_URI:-mongodb://${MONGO_ROOT_USER:-novelity}:${MONGO_ROOT_PASSWORD:-novelity-dev}@localhost:${MONGO_PORT:-27017}/?authSource=admin}"
 export STUDIO_URL="${STUDIO_URL:-http://localhost:${WEB_PORT:-8000}}"
 export BOOKSTORE_URL="${BOOKSTORE_URL:-http://localhost:${BOOKSTORE_PORT:-8001}}"
+export ADMIN_URL="${ADMIN_URL:-http://localhost:${ADMIN_PORT:-8002}}"
+export ADMIN_CORE_API_URL="${ADMIN_CORE_API_URL:-http://localhost:${ADMIN_API_PORT:-8081}}"
 export CORE_API_URL="${CORE_API_URL:-http://localhost:8080}"
 
 fail() {
@@ -30,12 +34,18 @@ fail() {
 }
 
 case "${1:-all}" in
-api)
+api | admin-api)
 	command -v go >/dev/null 2>&1 || fail "go not found — install it: brew install go"
 	docker compose up -d --wait nn-mongodb
 	# air is pinned and installed once per version into the user cache, outside the repo.
 	air_dir="${XDG_CACHE_HOME:-$HOME/.cache}/nn-dev/air-$AIR_VERSION"
 	[ -x "$air_dir/air" ] || GOBIN="$air_dir" go install "github.com/air-verse/air@$AIR_VERSION"
+	if [ "${1:-all}" = "admin-api" ]; then
+		export API_SURFACES=admin PORT="${ADMIN_API_PORT:-8081}" BIND_HOST=127.0.0.1
+		cd apps/core-api
+		exec "$air_dir/air" -c .air-admin.toml
+	fi
+	export API_SURFACES=studio,store
 	cd apps/core-api
 	exec "$air_dir/air"
 	;;
@@ -45,9 +55,16 @@ studio | web)
 	exec npm run dev
 	;;
 all)
+	# Create Mongo before the two API runners can race to create the same container.
+	docker compose up -d --wait nn-mongodb
 	[ -x node_modules/.bin/concurrently ] || fail "node_modules missing — run: npm ci"
-	exec node_modules/.bin/concurrently --kill-others --names api,studio,bookstore --prefix-colors blue,magenta,green \
-		"scripts/dev api" "scripts/dev studio" "scripts/dev bookstore"
+	exec node_modules/.bin/concurrently --kill-others --names api,studio,bookstore,admin-api,admin --prefix-colors blue,magenta,green,yellow,cyan \
+		"scripts/dev api" "scripts/dev studio" "scripts/dev bookstore" "scripts/dev admin-api" "scripts/dev admin"
+	;;
+admin)
+	[ -x node_modules/.bin/vite ] || fail "workspace dependencies missing — run: npm ci"
+	cd apps/admin-web
+	exec npm run dev
 	;;
 bookstore)
 	[ -x node_modules/.bin/vite ] || fail "workspace dependencies missing — run: npm ci"
@@ -55,7 +72,7 @@ bookstore)
 	exec npm run dev
 	;;
 *)
-	echo "usage: scripts/dev [api|studio|bookstore]" >&2
+	echo "usage: scripts/dev [api|studio|bookstore|admin-api|admin]" >&2
 	exit 2
 	;;
 esac

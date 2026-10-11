@@ -4,6 +4,7 @@ package config
 import (
 	"fmt"
 	"log/slog"
+	"net"
 	"net/url"
 	"os"
 	"strings"
@@ -25,7 +26,7 @@ type Config struct {
 
 func Load() Config {
 	return Config{
-		Addr:     ":" + env("PORT", "8080"),
+		Addr:     net.JoinHostPort(os.Getenv("BIND_HOST"), env("PORT", "8080")),
 		MongoURI: env("MONGO_URI", "mongodb://localhost:27017"),
 		MongoDB:  env("MONGO_DB", "novelity"),
 		Origins: map[string]string{
