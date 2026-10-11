@@ -8,9 +8,9 @@ core-api 명령은 `scripts/go`로 실행한다. 로컬에 `go`가 있으면 그
 
 | 목적 | 실제 명령어 |
 |------|-------------|
-| 전체 테스트 | `cd apps/core-api && MONGO_TEST_URI='mongodb://novelity:novelity-dev@localhost:27017/?authSource=admin' ../../scripts/go test ./...` (compose의 Mongo 필요, 미설정 시 store 테스트 skip) |
+| 전체 테스트 | `cd apps/core-api && MONGO_TEST_URI='mongodb://novelity:novelity-dev@localhost:27017/?authSource=admin' ../../scripts/go test ./...` (compose의 Mongo 필요, 미설정 시 Mongo 테스트 skip) |
 | 관련 테스트 | `cd apps/core-api && ../../scripts/go test ./internal/<pkg>/...` |
-| 린트·포맷 | `cd apps/core-api && ../../scripts/go vet ./... && ../../scripts/go fmt ./...` · `npm run lint` (수정: `npm run format`) |
+| 린트·포맷 | `cd apps/core-api && ../../scripts/go vet ./... && ../../scripts/go fmt ./...` · `npm run lint` (수정: `npm run format --workspace @novelity/studio-web`, 공통 패키지는 `npm exec -- prettier --write packages`) |
 | 타입 검사 | `npm run check` |
 | 빌드 | `npm run build` · `docker compose --profile app build` |
 | 개발 실행 | 최초 1회 `brew install go`, `cp .env.example .env` 후 값 입력, 루트에서 `npm ci` → `npm run dev` → http://localhost:8000 (`WEB_PORT`로 변경). 따로 띄우려면 `npm run dev:api` / `npm run dev:studio` |
@@ -38,7 +38,7 @@ core-api 명령은 `scripts/go`로 실행한다. 로컬에 `go`가 있으면 그
 - 관리자 세션은 설정 가능한 공개 SESSION_TTL(기본 168h)과 별개로 2시간이다. ADMIN_EMAILS는 쉼표로 구분한 검증된 Google 이메일이며 변경 후 API를 재시작한다.
 - npm은 루트 lockfile 하나를 쓴다. 앱에서 별도 npm ci를 실행하지 않는다. `npm run check`, `npm run lint`, `npm run build`는 모든 워크스페이스의 해당 명령을 실행한다. 앱만 검사하려면 `npm run check --workspace @novelity/studio-web`을 쓴다. `npm test --workspace @novelity/api-client`는 공통 클라이언트 테스트다.
 - air는 `scripts/dev`에 버전을 고정했고, 처음 실행할 때 `~/.cache/nn-dev/`에 설치한다(go.mod에 넣지 않는다).
-- 컨테이너 이미지(`Dockerfile`, `nginx.conf`)는 그대로 유지한다. compose에서는 `app` 프로필로만 띄우고, CI e2e가 이 방식을 쓴다.
+- 컨테이너는 웹의 루트 컨텍스트 Dockerfile과 nginx 프록시로 실행한다. compose에서는 `app` 프로필로만 띄우고, CI e2e가 이 방식을 쓴다.
 
 ## 검증 흐름
 
@@ -56,7 +56,7 @@ core-api 명령은 `scripts/go`로 실행한다. 로컬에 `go`가 있으면 그
 
 | 워크플로 | 트리거 | 내용 | 필수 여부 |
 |----------|--------|------|-----------|
-| `verify-pull-request.yml` | main·develop 대상 PR, main·develop push, 수동 | core-api: gofmt, vet, `go test -race`(Mongo 서비스 컨테이너로 store 테스트 포함) · web(워크스페이스): 루트 npm ci, 전체 check·lint·build와 API 클라이언트 테스트 | 필수 게이트로 지정한다 |
+| `verify-pull-request.yml` | main·develop 대상 PR, main·develop push, 수동 | core-api: gofmt, vet, `go test -race`(Mongo 서비스 컨테이너로 Mongo 통합 테스트 포함) · web(워크스페이스): 루트 npm ci, 전체 check·lint·build와 API 클라이언트 테스트 | 필수 게이트로 지정한다 |
 | `e2e.yml` | main 대상 PR, 수동(릴리스 PR은 prepare-release가 실행) | `COMPOSE_PROFILES=app`으로 `docker compose up --build --wait` → Playwright 전체 실행. 실패 시 trace와 리포트를 업로드한다 | 필수 아님 |
 | `build-images.yml` | main push, `v*` 태그, 수동(릴리스 태그는 publish-release가 실행) | core-api·studio-web 이미지를 빌드만 한다. 레지스트리가 없어 로그인·푸시는 주석 처리했다. 활성화 방법은 파일 머리말에 있다 | — |
 | `prepare-release.yml` | 수동(Actions → Prepare release) | 버전 계산 → `release/vX.Y.Z` 브랜치에 bump·CHANGELOG 커밋 → main 대상 릴리스 PR 생성, 검증·e2e 실행 | — |
@@ -97,7 +97,7 @@ core-api 명령은 `scripts/go`로 실행한다. 로컬에 `go`가 있으면 그
 - API 경로는 모두 `/api` 접두사 아래에 둔다(nginx 프록시 기준). 로그인이 필요한 API에는 `internal/http/auth.Service.RequireSession`을 붙이고, 역할이 필요하면 `auth.RequireRole(identity.Author)` 등을 그 다음에 쌓는다. 상태 변경 그룹에는 `SameOrigin`을 적용한다. 핸들러는 `auth.CurrentUser(c)`로 사용자를 읽는다. 도메인 identity는 HTTP를 참조하지 않는다.
 - 비밀값은 `.env`에만 둔다(git 제외). 새 설정을 추가하면 `.env.example`과 compose 환경변수를 함께 갱신한다.
 - git 제외 파일 중 새 worktree에도 있어야 하는 것(`.env` 등)은 `.worktreeinclude`에 적는다. Claude Code가 worktree를 만들 때 복사한다.
-- web UI는 docs/STYLE.md를 따른다. 색은 `layout.css`의 토큰만 쓰고, 새 페이지는 `@novelity/ui`의 `Header` + `PageContent`로 만든다. 디자인 토큰 원본은 `packages/ui/src/tokens.css`다. 서점은 자체 화면 틀을 쓴다.
+- web UI는 docs/STYLE.md를 따른다. 색은 공통 CSS 토큰만 쓰고, 새 페이지는 `@novelity/ui`의 `Header` + `PageContent`로 만든다. 디자인 토큰 원본은 `packages/ui/src/tokens.css`다. 서점은 자체 화면 틀을 쓴다.
 
 - 웹 이미지 빌드 컨텍스트는 저장소 루트다: `docker build -f apps/studio-web/Dockerfile .`. core-api 컨텍스트는 apps/core-api다. CI 이미지 매트릭스는 context와 dockerfile을 함께 지정한다.
 - 릴리스 버전 변경은 `npm version <version> --workspace @novelity/studio-web --no-git-tag-version`으로 앱 manifest와 루트 lockfile을 함께 갱신한다.

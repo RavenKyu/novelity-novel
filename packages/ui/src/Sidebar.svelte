@@ -62,7 +62,7 @@
 		width: var(--sidebar-width);
 	}
 
-	/* Narrow window: icon-width rail (see --sidebar-width in layout.css) that
+	/* Narrow window: icon-width rail (see --sidebar-width in tokens.css) that
 	   expands over the content on hover. */
 	@media (max-width: 1279px) {
 		aside {

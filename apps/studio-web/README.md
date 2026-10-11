@@ -1,48 +1,18 @@
-# sv
+# Novelity Studio
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+작가 공간의 SvelteKit SPA다. 시스템 구조와 세션 정책은 [ADR-002](../../docs/adr/002-spaces-identity-sessions.md)를 따른다.
 
-## Creating a project
-
-If you're seeing this, you've probably already done this step. Congrats!
+저장소 루트에서 실행한다.
 
 ```sh
-# create a new project
-npx sv create my-app
-```
-
-To recreate this project with the same configuration:
-
-```sh
-# recreate this project
-npx sv@0.17.1 create --template minimal --types ts --add prettier tailwindcss="plugins:none" sveltekit-adapter="adapter:static" --no-download-check --install npm apps/studio-web
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
+npm ci
 npm run dev:studio
-
-# or start the server and open the app in a new browser tab
-npm run dev:studio -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```sh
+npm run check --workspace @novelity/studio-web
+npm run lint --workspace @novelity/studio-web
 npm run build --workspace @novelity/studio-web
+npm run preview --workspace @novelity/studio-web
 ```
 
-You can preview the production build with `npm run preview`.
+API와 MongoDB까지 함께 실행하려면 루트 `npm run dev`를 쓴다. 로컬 설정과 callback 등록은 [개발 환경](../../docs/CONVENTIONS.md#개발-환경)을 따른다.
 
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
-
-## 워크스페이스
-
-설치는 저장소 루트에서 `npm ci` 한 번으로 한다. 루트 `npm run dev:studio`로 실행한다.
-공통 컴포넌트·토큰은 `@novelity/ui`, API 타입·fetch는 `@novelity/api-client`에서 가져온다.
-이 앱은 작가 공간이며 별도 서점·관리자 앱과의 구조·세션 경계는 docs/adr/002-spaces-identity-sessions.md를 따른다.
+공통 컴포넌트·토큰은 `@novelity/ui`, API 타입·fetch는 `@novelity/api-client`에서 가져온다. Sidebar에 앱 제목·버전·경로·메뉴와 사용자 메뉴 snippet을 전달한다. 세션 상태와 페이지 이동은 앱이 소유한다.

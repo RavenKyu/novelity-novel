@@ -119,7 +119,7 @@ func (s *Service) login(c *echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid_origin"})
 	}
-	returnTo, err := s.validReturnTo(c.QueryParam("returnTo"), origin)
+	returnTo, err := s.validReturnTo(c.QueryParam("returnTo"))
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid_return_to"})
 	}
@@ -132,7 +132,9 @@ func (s *Service) login(c *echo.Context) error {
 		return s.loginError(c, "server_error", returnTo)
 	}
 	state, nonce, verifier := randomToken(), randomToken(), oauth2.GenerateVerifier()
-	s.setFlow(c, space, loginFlow{State: state, Nonce: nonce, Verifier: verifier, ReturnTo: returnTo, Origin: origin, ExpiresAt: s.now().Add(flowTTL).Unix()})
+	if err := s.setFlow(c, space, loginFlow{State: state, Nonce: nonce, Verifier: verifier, ReturnTo: returnTo, Origin: origin, ExpiresAt: s.now().Add(flowTTL).Unix()}); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid_return_to"})
+	}
 	url := oc.AuthCodeURL(state,
 		oauth2.S256ChallengeOption(verifier),
 		oidc.Nonce(nonce),

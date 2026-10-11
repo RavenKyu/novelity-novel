@@ -9,9 +9,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/labstack/echo/v5"
-	"novelity-novel/core-api/internal/identity"
 )
 
 func TestReturnToValidation(t *testing.T) {
@@ -214,5 +211,17 @@ func TestSameOriginLogout(t *testing.T) {
 	}
 }
 
-// Keep imports explicit for compile-time checks of middleware and domain roles.
-var _ echo.MiddlewareFunc = RequireRole(identity.Author)
+func TestFlowCookieSizeLimit(t *testing.T) {
+	h := newHarness(t)
+	for _, target := range []string{"/" + strings.Repeat("a", 2047), "/" + strings.Repeat("a", 2048), "/" + strings.Repeat("<", 2047)} {
+		rec := h.do("GET", "/api/auth/google/login?"+url.Values{"returnTo": {target}}.Encode(), nil)
+		if target == "/"+strings.Repeat("a", 2047) {
+			flow := cookie(rec, flowCookie)
+			if flow == nil || len(flow.String()) > 4096 {
+				t.Fatalf("valid bounded flow: %d %+v", rec.Code, flow)
+			}
+		} else if rec.Code != 400 || cookie(rec, flowCookie) != nil {
+			t.Fatalf("oversized flow accepted: %d", rec.Code)
+		}
+	}
+}

@@ -22,7 +22,10 @@ func (s *Service) requestSpace(c *echo.Context) (string, string, error) {
 	return "", "", fmt.Errorf("unknown browser origin")
 }
 
-func (s *Service) validReturnTo(raw, origin string) (string, error) {
+func (s *Service) validReturnTo(raw string) (string, error) {
+	if len(raw) > 2048 {
+		return "", fmt.Errorf("returnTo is too long")
+	}
 	if raw == "" {
 		return "/", nil
 	}
@@ -56,8 +59,6 @@ func (s *Service) validReturnTo(raw, origin string) (string, error) {
 	if !allowed {
 		return "", fmt.Errorf("returnTo origin is not allowed")
 	}
-	// origin is the initiating, trusted origin; absolute returns never select the OAuth callback.
-	_ = origin
 	return u.String(), nil
 }
 
