@@ -41,10 +41,10 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  nn-web-server:
+  nn-studio-web-server:
     profiles: [app]
-    build: ./apps/web
-    image: nn-web-server:local
+    build: ./apps/studio-web
+    image: nn-studio-web-server:local
     ports:
       - "${WEB_PORT:-8000}:80"
     depends_on:

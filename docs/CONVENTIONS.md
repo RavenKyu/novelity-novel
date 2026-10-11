@@ -10,10 +10,10 @@ core-api 명령은 `scripts/go`로 실행한다. 로컬에 `go`가 있으면 그
 |------|-------------|
 | 전체 테스트 | `cd apps/core-api && MONGO_TEST_URI='mongodb://novelity:novelity-dev@localhost:27017/?authSource=admin' ../../scripts/go test ./...` (compose의 Mongo 필요, 미설정 시 store 테스트 skip) |
 | 관련 테스트 | `cd apps/core-api && ../../scripts/go test ./internal/<pkg>/...` |
-| 린트·포맷 | `cd apps/core-api && ../../scripts/go vet ./... && ../../scripts/go fmt ./...` · `cd apps/web && npm run lint` (수정: `npm run format`) |
-| 타입 검사 | `cd apps/web && npm run check` |
-| 빌드 | `cd apps/web && npm run build` · `docker compose --profile app build` |
-| 개발 실행 | 최초 1회 `brew install go`, `cp .env.example .env` 후 값 입력, `npm ci`, `(cd apps/web && npm ci)` → `npm run dev` → http://localhost:8000 (`WEB_PORT`로 변경). 따로 띄우려면 `npm run dev:api` / `npm run dev:web` |
+| 린트·포맷 | `cd apps/core-api && ../../scripts/go vet ./... && ../../scripts/go fmt ./...` · `cd apps/studio-web && npm run lint` (수정: `npm run format`) |
+| 타입 검사 | `cd apps/studio-web && npm run check` |
+| 빌드 | `cd apps/studio-web && npm run build` · `docker compose --profile app build` |
+| 개발 실행 | 최초 1회 `brew install go`, `cp .env.example .env` 후 값 입력, `npm ci`, `(cd apps/studio-web && npm ci)` → `npm run dev` → http://localhost:8000 (`WEB_PORT`로 변경). 따로 띄우려면 `npm run dev:api` / `npm run dev:web` |
 | 컨테이너 실행 | `docker compose --profile app up -d --build` (CI e2e와 같은 운영 유사 구성. 개발 서버와 8000 포트를 같이 쓰므로 동시에 띄우지 않는다) |
 | e2e (Playwright) | 최초 1회 `npm ci && npm run test:e2e:install` → 앱 실행(`npm run dev`) 후 `npm run test:e2e` (관련 spec만: `npx playwright test --config tests/e2e/playwright.config.ts tests/e2e/<name>.spec.ts`) |
 | 워크플로 린트 | `docker run --rm -v "$PWD":/repo -w /repo rhysd/actionlint:1.7.7` |
@@ -40,7 +40,7 @@ core-api 명령은 `scripts/go`로 실행한다. 로컬에 `go`가 있으면 그
 - **개발 중:** 바꾼 부분의 관련 테스트만 돌린다. Go는 해당 패키지, web은 check와 lint, UI 동작이 바뀌었으면 관련 e2e spec을 실행한다. 전체 e2e는 CI나 명시 요청이 있을 때 돌린다.
 - **pre-commit 훅** (`.githooks/pre-commit`): 클론이나 worktree마다 `npm run hooks:install`을 한 번 실행해야 켜진다. 커밋에 포함된 경로를 보고 관련 검사만 실행한다.
   - `apps/core-api/`가 포함되면 go vet과 go test를 돌린다.
-  - `apps/web/`이 포함되면 svelte-check와 prettier를 돌린다.
+  - `apps/studio-web/`이 포함되면 svelte-check와 prettier를 돌린다.
   - e2e는 커밋에 포함된 `tests/e2e/*.spec.ts`와 `E2E_SPEC_FILES`로 지정한 spec만 실행한다. 전체 suite로 대신하지 않는다. 예: `E2E_SPEC_FILES="tests/e2e/session.spec.ts" git commit …`
   - e2e는 실행 중인 앱(`npm run dev`)을 대상으로 한다. 개발 서버는 변경을 바로 반영하므로 다시 빌드할 필요가 없다.
   - 우회: `SKIP_HOOKS=1`(전체) 또는 `SKIP_E2E=1`(e2e만). 실패를 남긴 채 넘길 때는 이유를 커밋 메시지에 적는다.
@@ -64,7 +64,7 @@ core-api 명령은 `scripts/go`로 실행한다. 로컬에 `go`가 있으면 그
 
 ## 릴리스
 
-저장소 전체가 버전 하나를 쓴다. 태그는 `vX.Y.Z`이고, `apps/web/package.json`의 version(화면의 `__APP_VERSION__`)이 같은 값을 따른다. 변경 내역은 `CHANGELOG.md`와 GitHub Release에 남는다.
+저장소 전체가 버전 하나를 쓴다. 태그는 `vX.Y.Z`이고, `apps/studio-web/package.json`의 version(화면의 `__APP_VERSION__`)이 같은 값을 따른다. 변경 내역은 `CHANGELOG.md`와 GitHub Release에 남는다.
 
 1. develop 대상 PR에는 라벨을 하나 붙인다. 라벨이 CHANGELOG 분류와 자동 bump를 정한다(`.github/release.yml`, `scripts/release`). PR 제목이 그대로 CHANGELOG 항목이 되므로 변경 내용을 알 수 있게 쓴다.
 
@@ -76,7 +76,7 @@ core-api 명령은 `scripts/go`로 실행한다. 로컬에 `go`가 있으면 그
    | `chore` 또는 없음 | patch | 기타 |
    | `release` | — | 제외(릴리스·동기화 PR 전용) |
 
-2. Actions → **Prepare release** → Run workflow(`auto` 또는 patch·minor·major). 지난 태그 이후 develop을 기준으로 `release/vX.Y.Z` 브랜치와 main 대상 릴리스 PR이 만들어진다. 태그가 없으면 첫 릴리스는 `apps/web/package.json`의 버전이다.
+2. Actions → **Prepare release** → Run workflow(`auto` 또는 patch·minor·major). 지난 태그 이후 develop을 기준으로 `release/vX.Y.Z` 브랜치와 main 대상 릴리스 PR이 만들어진다. 태그가 없으면 첫 릴리스는 `apps/studio-web/package.json`의 버전이다.
 3. 릴리스 PR에서 버전과 CHANGELOG를 확인한다. 고칠 내용은 그 release 브랜치에 push한다.
 4. 릴리스 PR을 **merge commit**으로 병합한다(squash·rebase 금지). 그러면 publish-release가 태그와 GitHub Release를 만들고, 이미지 빌드를 실행하고, main → develop 동기화 PR을 연다. 동기화 PR은 검사가 통과하면 자동 병합된다.
 

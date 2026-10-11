@@ -5,9 +5,9 @@
 
 # Secrets and ports for scripts/dev and docker compose
 .env
-# Vite env files, if web ever gets its own (apps/web/.gitignore reserves them)
-apps/web/.env
-apps/web/.env.*
+# Vite env files, if web ever gets its own (apps/studio-web/.gitignore reserves them)
+apps/studio-web/.env
+apps/studio-web/.env.*
 
 # Personal tool settings: Claude Code permission allowlist, Serena overrides
 .claude/settings.local.json

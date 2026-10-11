@@ -2,7 +2,7 @@
 
 > 마지막 갱신: 2026-10-09
 > 출처: argos 프론트엔드(`argos/frontend/src/app.css`, `lib/components/layout/*`, `lib/components/ui/*`)의 스타일을 차용했다.
-> 토큰 원본: `apps/web/src/routes/layout.css`의 `@theme`. 값을 바꿀 때는 그 파일과 이 문서를 함께 고친다.
+> 토큰 원본: `apps/studio-web/src/routes/layout.css`의 `@theme`. 값을 바꿀 때는 그 파일과 이 문서를 함께 고친다.
 
 ## 원칙
 

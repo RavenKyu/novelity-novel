@@ -36,8 +36,8 @@ api)
 	exec "$air_dir/air"
 	;;
 web)
-	[ -d apps/web/node_modules ] || fail "apps/web/node_modules missing — run: (cd apps/web && npm ci)"
-	cd apps/web
+	[ -d apps/studio-web/node_modules ] || fail "apps/studio-web/node_modules missing — run: (cd apps/studio-web && npm ci)"
+	cd apps/studio-web
 	exec npm run dev
 	;;
 all)
