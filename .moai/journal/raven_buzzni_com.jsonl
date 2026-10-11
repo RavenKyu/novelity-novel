@@ -167,3 +167,7 @@
 {"ts":"2026-10-11T14:56:51Z","id":"nn-5p12.gav","kind":"note","by":"Raven","by_email":"raven@buzzni.com","text":"감독자 판단: 리뷰 판정(병합 가능, minor 3·nit 5)을 받아들인다. 사용자가 이 마일스톤에서 고친 뒤 릴리스하기로 했다. 지적은 모두 에픽 nn-4oyg로 넘긴다: M1 → nn-4oyg.uks, M2 → nn-4oyg.yds, M3·N4 → nn-4oyg.p1n, N1·N2·N3·N5 → nn-4oyg.hzv. 권고(관리자 웹 클릭재킹 방지 헤더)는 마일스톤 밖 백로그 nn-r8lj. 미확인 worker 주장(화면 overflow, scripts/dev 실제 기동, 실제 Google 로그인)은 릴리스 전 사람 확인 거리로 남긴다."}
 {"ts":"2026-10-11T14:56:51Z","id":"nn-5p12.gav","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"in_progress","to":"done","note":"받아들임: 판정(병합 가능). 이 리뷰에서 직접 고친 것 없음. 넘김: M1→nn-4oyg.uks, M2→nn-4oyg.yds, M3·N4→nn-4oyg.p1n, N1·N2·N3·N5→nn-4oyg.hzv (에픽 nn-4oyg, 마일스톤 nn-5p12), 권고→백로그 nn-r8lj"}
 {"ts":"2026-10-11T14:56:51Z","id":"nn-4oyg","kind":"note","by":"Raven","by_email":"raven@buzzni.com","text":"Sent: Sonnet 5.5 서브에이전트 (감독자 novelity-novel-1c 세션 안). 병합 전 리뷰는 감독자가 Opus 5.5 high 서브에이전트로 따로 돌린다 (사용자 지정)."}
+{"ts":"2026-10-11T14:57:25Z","id":"nn-4oyg.uks","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"todo","to":"in_progress"}
+{"ts":"2026-10-11T14:57:25Z","id":"nn-4oyg.yds","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"todo","to":"in_progress"}
+{"ts":"2026-10-11T14:57:25Z","id":"nn-4oyg.p1n","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"todo","to":"in_progress"}
+{"ts":"2026-10-11T14:57:25Z","id":"nn-4oyg.hzv","kind":"status","by":"Raven","by_email":"raven@buzzni.com","from":"todo","to":"in_progress"}
