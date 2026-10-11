@@ -8,7 +8,7 @@ import (
 	"novelity-novel/core-api/internal/http/auth"
 )
 
-// Register supplies a connectivity endpoint; domain endpoints are added by their feature epics.
+// Register supplies connectivity and optional-session state; catalog endpoints come later.
 func Register(group *echo.Group) {
 	group.GET("/healthz", func(c *echo.Context) error {
 		return c.JSON(http.StatusOK, map[string]string{"status": "ok", "surface": "store"})
