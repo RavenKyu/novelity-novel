@@ -89,7 +89,7 @@ core-api 명령은 `scripts/go`로 실행한다. 로컬에 `go`가 있으면 그
    | `release` | — | 제외(릴리스·동기화 PR 전용) |
 
 2. Actions → **Prepare release** → Run workflow(`auto` 또는 patch·minor·major). 지난 태그 이후 develop을 기준으로 `release/vX.Y.Z` 브랜치와 main 대상 릴리스 PR이 만들어진다. 태그가 없으면 첫 릴리스는 `apps/studio-web/package.json`의 버전이다.
-3. 릴리스 PR에서 버전과 CHANGELOG를 확인한다. 릴리스 사이에 손으로 쓴 항목은 `CHANGELOG.md`의 `## Unreleased`(뒤에 ` — 부제`를 붙여도 된다) 절에 둔다. Prepare release가 그 본문을 새 버전 절 맨 위로 옮기고 Unreleased 제목은 지우므로 GitHub Release 본문에도 들어간다(`scripts/test-release`로 확인). 고칠 내용은 그 release 브랜치에 push한다.
+3. 릴리스 PR에서 버전과 CHANGELOG를 확인한다. 릴리스 사이에 손으로 쓴 항목은 `CHANGELOG.md`의 `## Unreleased`(뒤에 ` — 부제`를 붙여도 된다) 절에 둔다. Prepare release가 그 본문을 새 버전 절 맨 위로 옮기고 Unreleased 제목은 지우므로 GitHub Release 본문에도 들어간다(`scripts/test-release`가 확인하며 pre-commit과 PR 검증이 돌린다). 고칠 내용은 그 release 브랜치에 push한다.
 4. 릴리스 PR을 **merge commit**으로 병합한다(squash·rebase 금지). 그러면 publish-release가 태그와 GitHub Release를 만들고, 이미지 빌드를 실행하고, main → develop 동기화 PR을 연다. 동기화 PR은 검사가 통과하면 자동 병합된다.
 
 - Action이 `GITHUB_TOKEN`으로 만든 PR·push·태그는 다른 워크플로를 실행시키지 않는다. 그래서 검증·e2e·이미지 빌드는 workflow_dispatch로 직접 실행한다.
