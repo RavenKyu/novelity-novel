@@ -37,6 +37,7 @@ func (d userDoc) user() identity.User {
 }
 
 type sessionDoc struct {
+	Audience  string        `bson:"audience"`
 	TokenHash string        `bson:"_id"`
 	UserID    bson.ObjectID `bson:"userId"`
 	CreatedAt time.Time     `bson:"createdAt"`
@@ -84,7 +85,7 @@ func (s *Store) CreateSession(ctx context.Context, sess identity.Session) error 
 		return fmt.Errorf("session user id: %w", err)
 	}
 	_, err = s.db.Collection(sessionsColl).InsertOne(ctx, sessionDoc{
-		TokenHash: sess.TokenHash, UserID: uid, CreatedAt: sess.CreatedAt, ExpiresAt: sess.ExpiresAt,
+		Audience: sess.Audience, TokenHash: sess.TokenHash, UserID: uid, CreatedAt: sess.CreatedAt, ExpiresAt: sess.ExpiresAt,
 	})
 	if err != nil {
 		return fmt.Errorf("insert session: %w", err)
@@ -92,10 +93,10 @@ func (s *Store) CreateSession(ctx context.Context, sess identity.Session) error 
 	return nil
 }
 
-func (s *Store) SessionUser(ctx context.Context, tokenHash string, now time.Time) (identity.User, error) {
+func (s *Store) SessionUser(ctx context.Context, tokenHash string, now time.Time, audience string) (identity.User, error) {
 	var sess sessionDoc
 	err := s.db.Collection(sessionsColl).FindOne(ctx,
-		bson.M{"_id": tokenHash, "expiresAt": bson.M{"$gt": now}},
+		sessionFilter(tokenHash, audience, now),
 	).Decode(&sess)
 	if errors.Is(err, driver.ErrNoDocuments) {
 		return identity.User{}, identity.ErrNoSession
@@ -114,8 +115,8 @@ func (s *Store) SessionUser(ctx context.Context, tokenHash string, now time.Time
 	return u.user(), nil
 }
 
-func (s *Store) DeleteSession(ctx context.Context, tokenHash string) error {
-	if _, err := s.db.Collection(sessionsColl).DeleteOne(ctx, bson.M{"_id": tokenHash}); err != nil {
+func (s *Store) DeleteSession(ctx context.Context, tokenHash string, audience string) error {
+	if _, err := s.db.Collection(sessionsColl).DeleteOne(ctx, sessionFilter(tokenHash, audience, time.Time{})); err != nil {
 		return fmt.Errorf("delete session: %w", err)
 	}
 	return nil
@@ -127,4 +128,18 @@ func defaultRoles(roles []identity.Role) []identity.Role {
 		return []identity.Role{identity.Reader}
 	}
 	return roles
+}
+
+// Existing sessions without audience remain public, never admin.
+func sessionFilter(hash, audience string, now time.Time) bson.M {
+	filter := bson.M{"_id": hash}
+	if audience == "public" {
+		filter["$or"] = bson.A{bson.M{"audience": "public"}, bson.M{"audience": ""}, bson.M{"audience": bson.M{"$exists": false}}}
+	} else {
+		filter["audience"] = audience
+	}
+	if !now.IsZero() {
+		filter["expiresAt"] = bson.M{"$gt": now}
+	}
+	return filter
 }

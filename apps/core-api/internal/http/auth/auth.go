@@ -26,7 +26,9 @@ import (
 
 const (
 	// SessionCookie holds the raw session token; the repo only ever sees its hash.
-	SessionCookie = "nn_session"
+	SessionCookie      = "nn_session"
+	AdminSessionCookie = "nn_admin_session"
+	AdminSessionTTL    = 2 * time.Hour
 	// flowCookie carries state, nonce and PKCE verifier between login and callback.
 	flowCookie = "nn_oauth"
 	flowPath   = "/api/auth/google"
@@ -43,21 +45,22 @@ type Config struct {
 	ClientSecret string
 	// Issuer is the OIDC issuer; GoogleIssuer in production.
 	Issuer string
-	// PublicURL is the browser-facing origin, e.g. http://localhost:8000.
-	PublicURL   string
-	SessionTTL  time.Duration
-	AdminEmails []string
+	// Origins lists explicitly trusted browser-facing origins by surface.
+	Origins       map[string]string
+	Surfaces      []string
+	SessionDomain string
+	SessionTTL    time.Duration
+	AdminEmails   []string
 }
 
 // Enabled reports whether Google credentials are configured.
 func (c Config) Enabled() bool { return c.ClientID != "" && c.ClientSecret != "" }
 
-func (c Config) secureCookies() bool { return strings.HasPrefix(c.PublicURL, "https://") }
-
 type Service struct {
-	cfg  Config
-	repo identity.Repo
-	now  func() time.Time
+	cfg     Config
+	repo    identity.Repo
+	now     func() time.Time
+	flowKey []byte
 
 	mu       sync.Mutex
 	oauth    *oauth2.Config
@@ -65,7 +68,15 @@ type Service struct {
 }
 
 func New(cfg Config, repo identity.Repo) *Service {
-	return &Service{cfg: cfg, repo: repo, now: time.Now}
+	if len(cfg.Surfaces) == 0 {
+		cfg.Surfaces = []string{"studio", "store"}
+	}
+	if cfg.SessionTTL <= 0 {
+		cfg.SessionTTL = 7 * 24 * time.Hour
+	}
+	key := make([]byte, 32)
+	_, _ = rand.Read(key)
+	return &Service{cfg: cfg, repo: repo, now: time.Now, flowKey: key}
 }
 
 // Register mounts the auth routes under g (expected to be /api).
@@ -73,16 +84,18 @@ func (s *Service) Register(g *echo.Group) {
 	g.GET("/auth/google/login", s.login)
 	g.GET("/auth/google/callback", s.callback)
 	g.GET("/auth/me", s.me, s.RequireSession)
-	g.POST("/auth/logout", s.logout)
+	g.POST("/auth/logout", s.logout, s.SameOrigin)
 }
 
 // provider runs OIDC discovery once, on first use, so the server starts even
 // when the issuer is unreachable; a failed discovery is retried next time.
-func (s *Service) provider(ctx context.Context) (*oauth2.Config, *oidc.IDTokenVerifier, error) {
+func (s *Service) provider(ctx context.Context, origin string) (*oauth2.Config, *oidc.IDTokenVerifier, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	if s.oauth != nil {
-		return s.oauth, s.verifier, nil
+		oc := *s.oauth
+		oc.RedirectURL = origin + flowPath + "/callback"
+		return &oc, s.verifier, nil
 	}
 	p, err := oidc.NewProvider(ctx, s.cfg.Issuer)
 	if err != nil {
@@ -92,32 +105,34 @@ func (s *Service) provider(ctx context.Context) (*oauth2.Config, *oidc.IDTokenVe
 		ClientID:     s.cfg.ClientID,
 		ClientSecret: s.cfg.ClientSecret,
 		Endpoint:     p.Endpoint(),
-		RedirectURL:  strings.TrimRight(s.cfg.PublicURL, "/") + flowPath + "/callback",
-		Scopes:       []string{oidc.ScopeOpenID, "email", "profile"},
+
+		Scopes: []string{oidc.ScopeOpenID, "email", "profile"},
 	}
 	s.verifier = p.Verifier(&oidc.Config{ClientID: s.cfg.ClientID})
-	return s.oauth, s.verifier, nil
+	oc := *s.oauth
+	oc.RedirectURL = origin + flowPath + "/callback"
+	return &oc, s.verifier, nil
 }
 
 func (s *Service) login(c *echo.Context) error {
-	if !s.cfg.Enabled() {
-		return loginError(c, "not_configured")
+	space, origin, err := s.requestSpace(c)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid_origin"})
 	}
-	oc, _, err := s.provider(c.Request().Context())
+	returnTo, err := s.validReturnTo(c.QueryParam("returnTo"), origin)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid_return_to"})
+	}
+	if !s.cfg.Enabled() {
+		return s.loginError(c, "not_configured", returnTo)
+	}
+	oc, _, err := s.provider(c.Request().Context(), origin)
 	if err != nil {
 		slog.Error("google login", "err", err)
-		return loginError(c, "server_error")
+		return s.loginError(c, "server_error", returnTo)
 	}
 	state, nonce, verifier := randomToken(), randomToken(), oauth2.GenerateVerifier()
-	c.SetCookie(&http.Cookie{
-		Name:     flowCookie,
-		Value:    state + "." + nonce + "." + verifier,
-		Path:     flowPath,
-		MaxAge:   int(flowTTL.Seconds()),
-		HttpOnly: true,
-		Secure:   s.cfg.secureCookies(),
-		SameSite: http.SameSiteLaxMode,
-	})
+	s.setFlow(c, space, loginFlow{State: state, Nonce: nonce, Verifier: verifier, ReturnTo: returnTo, Origin: origin, ExpiresAt: s.now().Add(flowTTL).Unix()})
 	url := oc.AuthCodeURL(state,
 		oauth2.S256ChallengeOption(verifier),
 		oidc.Nonce(nonce),
@@ -128,28 +143,33 @@ func (s *Service) login(c *echo.Context) error {
 
 func (s *Service) callback(c *echo.Context) error {
 	ctx := c.Request().Context()
-	state, nonce, verifier, ok := s.takeFlow(c)
-	if !ok || subtle.ConstantTimeCompare([]byte(state), []byte(c.QueryParam("state"))) != 1 {
-		return loginError(c, "invalid_state")
+	space, origin, err := s.requestSpace(c)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": "invalid_origin"})
+	}
+	flow, ok := s.takeFlow(c, space, origin)
+	returnTo := flow.ReturnTo
+	if !ok || subtle.ConstantTimeCompare([]byte(flow.State), []byte(c.QueryParam("state"))) != 1 {
+		return s.loginError(c, "invalid_state", returnTo)
 	}
 	if c.QueryParam("error") != "" {
-		return loginError(c, "denied")
+		return s.loginError(c, "denied", returnTo)
 	}
-	oc, idv, err := s.provider(ctx)
+	oc, idv, err := s.provider(ctx, origin)
 	if err != nil {
 		slog.Error("google callback", "err", err)
-		return loginError(c, "server_error")
+		return s.loginError(c, "server_error", returnTo)
 	}
-	tok, err := oc.Exchange(ctx, c.QueryParam("code"), oauth2.VerifierOption(verifier))
+	tok, err := oc.Exchange(ctx, c.QueryParam("code"), oauth2.VerifierOption(flow.Verifier))
 	if err != nil {
 		slog.Warn("google code exchange", "err", err)
-		return loginError(c, "exchange_failed")
+		return s.loginError(c, "exchange_failed", returnTo)
 	}
 	raw, _ := tok.Extra("id_token").(string)
 	idt, err := idv.Verify(ctx, raw)
-	if err != nil || subtle.ConstantTimeCompare([]byte(idt.Nonce), []byte(nonce)) != 1 {
+	if err != nil || subtle.ConstantTimeCompare([]byte(idt.Nonce), []byte(flow.Nonce)) != 1 {
 		slog.Warn("google id_token", "err", err)
-		return loginError(c, "invalid_token")
+		return s.loginError(c, "invalid_token", returnTo)
 	}
 	var claims struct {
 		Email         string `json:"email"`
@@ -158,10 +178,10 @@ func (s *Service) callback(c *echo.Context) error {
 		Picture       string `json:"picture"`
 	}
 	if err := idt.Claims(&claims); err != nil {
-		return loginError(c, "invalid_token")
+		return s.loginError(c, "invalid_token", returnTo)
 	}
 	if claims.Email == "" || !claims.EmailVerified {
-		return loginError(c, "unverified_email")
+		return s.loginError(c, "unverified_email", returnTo)
 	}
 
 	now := s.now()
@@ -170,31 +190,27 @@ func (s *Service) callback(c *echo.Context) error {
 	}, now)
 	if err != nil {
 		slog.Error("upsert user", "err", err)
-		return loginError(c, "server_error")
+		return s.loginError(c, "server_error", returnTo)
+	}
+	user = identity.EffectiveRoles(user, s.cfg.AdminEmails)
+	if space == "admin" && !user.HasRole(identity.Admin) {
+		return s.loginError(c, "forbidden", returnTo)
+	}
+	ttl := s.cfg.SessionTTL
+	audience := "public"
+	if space == "admin" {
+		ttl = AdminSessionTTL
+		audience = "admin"
 	}
 	token := randomToken()
 	if err := s.repo.CreateSession(ctx, identity.Session{
-		TokenHash: hashToken(token), UserID: user.ID, CreatedAt: now, ExpiresAt: now.Add(s.cfg.SessionTTL),
+		TokenHash: hashToken(token), UserID: user.ID, CreatedAt: now, ExpiresAt: now.Add(ttl), Audience: audience,
 	}); err != nil {
 		slog.Error("create session", "err", err)
-		return loginError(c, "server_error")
+		return s.loginError(c, "server_error", returnTo)
 	}
-	c.SetCookie(s.sessionCookie(token, int(s.cfg.SessionTTL.Seconds())))
-	return c.Redirect(http.StatusFound, "/")
-}
-
-// takeFlow reads and clears the login flow cookie (single use).
-func (s *Service) takeFlow(c *echo.Context) (state, nonce, verifier string, ok bool) {
-	ck, err := c.Cookie(flowCookie)
-	if err != nil {
-		return "", "", "", false
-	}
-	c.SetCookie(&http.Cookie{Name: flowCookie, Path: flowPath, MaxAge: -1, HttpOnly: true, Secure: s.cfg.secureCookies()})
-	parts := strings.Split(ck.Value, ".")
-	if len(parts) != 3 {
-		return "", "", "", false
-	}
-	return parts[0], parts[1], parts[2], true
+	c.SetCookie(s.sessionCookie(space, origin, token, int(ttl.Seconds())))
+	return c.Redirect(http.StatusFound, returnTo)
 }
 
 func (s *Service) me(c *echo.Context) error {
@@ -202,31 +218,52 @@ func (s *Service) me(c *echo.Context) error {
 }
 
 func (s *Service) logout(c *echo.Context) error {
-	if ck, err := c.Cookie(SessionCookie); err == nil {
-		if err := s.repo.DeleteSession(c.Request().Context(), hashToken(ck.Value)); err != nil {
-			slog.Error("delete session", "err", err)
+	space, origin, err := s.requestSpace(c)
+	if err != nil {
+		return c.NoContent(http.StatusBadRequest)
+	}
+	name, audience := sessionIdentity(space)
+	if ck, err := c.Cookie(name); err == nil {
+		if err := s.repo.DeleteSession(c.Request().Context(), hashToken(ck.Value), audience); err != nil {
+			return err
 		}
 	}
-	c.SetCookie(s.sessionCookie("", -1))
+	c.SetCookie(s.sessionCookie(space, origin, "", -1))
 	return c.NoContent(http.StatusNoContent)
+}
+
+func sessionIdentity(space string) (string, string) {
+	if space == "admin" {
+		return AdminSessionCookie, "admin"
+	}
+	return SessionCookie, "public"
 }
 
 // RequireSession rejects requests without a live session with 401 and makes
 // the user available to handlers via CurrentUser.
 func (s *Service) RequireSession(next echo.HandlerFunc) echo.HandlerFunc {
 	return func(c *echo.Context) error {
-		ck, err := c.Cookie(SessionCookie)
+		space, _, err := s.requestSpace(c)
+		if err != nil {
+			return unauthorized(c)
+		}
+		name, audience := sessionIdentity(space)
+		ck, err := c.Cookie(name)
 		if err != nil || ck.Value == "" {
 			return unauthorized(c)
 		}
-		user, err := s.repo.SessionUser(c.Request().Context(), hashToken(ck.Value), s.now())
+		user, err := s.repo.SessionUser(c.Request().Context(), hashToken(ck.Value), s.now(), audience)
 		if errors.Is(err, identity.ErrNoSession) {
 			return unauthorized(c)
 		}
 		if err != nil {
 			return err
 		}
-		c.Set(userKey, identity.EffectiveRoles(user, s.cfg.AdminEmails))
+		user = identity.EffectiveRoles(user, s.cfg.AdminEmails)
+		if space == "admin" && !user.HasRole(identity.Admin) {
+			return c.JSON(http.StatusForbidden, map[string]string{"error": "forbidden"})
+		}
+		c.Set(userKey, user)
 		return next(c)
 	}
 }
@@ -237,24 +274,25 @@ func CurrentUser(c *echo.Context) identity.User {
 	return u
 }
 
-func (s *Service) sessionCookie(value string, maxAge int) *http.Cookie {
+func (s *Service) sessionCookie(space, origin, value string, maxAge int) *http.Cookie {
+	name, _ := sessionIdentity(space)
+	domain := s.cfg.SessionDomain
+	if space == "admin" {
+		domain = ""
+	}
 	return &http.Cookie{
-		Name:     SessionCookie,
+		Name: name, Domain: domain,
 		Value:    value,
 		Path:     "/",
 		MaxAge:   maxAge,
 		HttpOnly: true,
-		Secure:   s.cfg.secureCookies(),
+		Secure:   strings.HasPrefix(origin, "https://"),
 		SameSite: http.SameSiteLaxMode,
 	}
 }
 
 func unauthorized(c *echo.Context) error {
 	return c.JSON(http.StatusUnauthorized, map[string]string{"error": "unauthorized"})
-}
-
-func loginError(c *echo.Context, code string) error {
-	return c.Redirect(http.StatusFound, "/login?error="+code)
 }
 
 func randomToken() string {

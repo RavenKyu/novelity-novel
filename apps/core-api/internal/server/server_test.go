@@ -42,3 +42,27 @@ func TestHealthzDBDown(t *testing.T) {
 		t.Fatalf("body = %q, want %q", got, want)
 	}
 }
+
+func TestOnlySelectedSurfacesAreMounted(t *testing.T) {
+	for _, tc := range []struct {
+		surfaces []string
+		path     string
+		want     int
+	}{
+		{nil, "/api/admin/healthz", 404},
+		{nil, "/api/store/healthz", 200},
+		{nil, "/api/studio/healthz", 401},
+		{[]string{"store"}, "/api/studio/healthz", 404},
+		{[]string{"admin"}, "/api/store/healthz", 404},
+		{[]string{"admin"}, "/api/admin/healthz", 401},
+		{[]string{}, "/api/store/healthz", 404},
+	} {
+		e := New(Deps{DB: fakePinger{}, Surfaces: tc.surfaces})
+		if rec := get(t, e, tc.path); rec.Code != tc.want {
+			t.Fatalf("surfaces %v %s: %d, want %d", tc.surfaces, tc.path, rec.Code, tc.want)
+		}
+		if rec := get(t, e, "/api/healthz"); rec.Code != 200 {
+			t.Fatal("common health disappeared")
+		}
+	}
+}

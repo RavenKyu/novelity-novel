@@ -73,21 +73,21 @@ func TestSessions(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := s.SessionUser(ctx, "h1", now)
+	got, err := s.SessionUser(ctx, "h1", now, "public")
 	if err != nil || got.ID != u.ID {
 		t.Fatalf("SessionUser = %+v, %v; want user %s", got, err, u.ID)
 	}
-	if _, err := s.SessionUser(ctx, "h1", now.Add(2*time.Hour)); !errors.Is(err, identity.ErrNoSession) {
+	if _, err := s.SessionUser(ctx, "h1", now.Add(2*time.Hour), "public"); !errors.Is(err, identity.ErrNoSession) {
 		t.Fatalf("expired session: err = %v, want ErrNoSession", err)
 	}
-	if _, err := s.SessionUser(ctx, "missing", now); !errors.Is(err, identity.ErrNoSession) {
+	if _, err := s.SessionUser(ctx, "missing", now, "public"); !errors.Is(err, identity.ErrNoSession) {
 		t.Fatalf("missing session: err = %v, want ErrNoSession", err)
 	}
 
-	if err := s.DeleteSession(ctx, "h1"); err != nil {
+	if err := s.DeleteSession(ctx, "h1", "public"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.SessionUser(ctx, "h1", now); !errors.Is(err, identity.ErrNoSession) {
+	if _, err := s.SessionUser(ctx, "h1", now, "public"); !errors.Is(err, identity.ErrNoSession) {
 		t.Fatalf("deleted session: err = %v, want ErrNoSession", err)
 	}
 }
@@ -116,5 +116,57 @@ func TestLoginPreservesAuthorRoles(t *testing.T) {
 	again, err := s.UpsertGoogleUser(ctx, p, time.Now())
 	if err != nil || !again.HasRole(identity.Author) {
 		t.Fatalf("roles lost on login: %+v, %v", again, err)
+	}
+}
+
+func TestSessionAudiences(t *testing.T) {
+	s := newTestStore(t)
+	ctx := context.Background()
+	now := time.Now()
+	u, err := s.UpsertGoogleUser(ctx, identity.Profile{Subject: "audiences", Email: "a@example.com"}, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, audience := range []string{"public", "admin", ""} {
+		hash := "hash-" + audience
+		if err := s.CreateSession(ctx, identity.Session{TokenHash: hash, UserID: u.ID, Audience: audience, CreatedAt: now, ExpiresAt: now.Add(time.Hour)}); err != nil {
+			t.Fatal(err)
+		}
+		for _, requested := range []string{"public", "admin"} {
+			_, err := s.SessionUser(ctx, hash, now, requested)
+			allowed := audience == requested || (audience == "" && requested == "public")
+			if allowed && err != nil {
+				t.Fatalf("%q as %q: %v", audience, requested, err)
+			}
+			if !allowed && !errors.Is(err, identity.ErrNoSession) {
+				t.Fatalf("cross-audience accepted: %q as %q", audience, requested)
+			}
+		}
+		wrong := "admin"
+		if audience == "admin" {
+			wrong = "public"
+		}
+		if err := s.DeleteSession(ctx, hash, wrong); err != nil {
+			t.Fatal(err)
+		}
+		requested := audience
+		if requested == "" {
+			requested = "public"
+		}
+		if _, err := s.SessionUser(ctx, hash, now, requested); err != nil {
+			t.Fatalf("cross-audience deletion removed token: %v", err)
+		}
+	}
+	// A document from ADR-001 has no audience key at all.
+	uid, _ := bson.ObjectIDFromHex(u.ID)
+	_, err = s.db.Collection(sessionsColl).InsertOne(ctx, bson.M{"_id": "legacy", "userId": uid, "createdAt": now, "expiresAt": now.Add(time.Hour)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.SessionUser(ctx, "legacy", now, "public"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.SessionUser(ctx, "legacy", now, "admin"); !errors.Is(err, identity.ErrNoSession) {
+		t.Fatalf("legacy token became admin: %v", err)
 	}
 }

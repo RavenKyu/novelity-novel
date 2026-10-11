@@ -142,11 +142,11 @@ func (m *memRepo) CreateSession(_ context.Context, s identity.Session) error {
 	return nil
 }
 
-func (m *memRepo) SessionUser(_ context.Context, tokenHash string, now time.Time) (identity.User, error) {
+func (m *memRepo) SessionUser(_ context.Context, tokenHash string, now time.Time, audience string) (identity.User, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	s, ok := m.sessions[tokenHash]
-	if !ok || !now.Before(s.ExpiresAt) {
+	if !ok || !now.Before(s.ExpiresAt) || (s.Audience != audience && !(s.Audience == "" && audience == "public")) {
 		return identity.User{}, identity.ErrNoSession
 	}
 	for _, u := range m.users {
@@ -157,10 +157,12 @@ func (m *memRepo) SessionUser(_ context.Context, tokenHash string, now time.Time
 	return identity.User{}, identity.ErrNoSession
 }
 
-func (m *memRepo) DeleteSession(_ context.Context, tokenHash string) error {
+func (m *memRepo) DeleteSession(_ context.Context, tokenHash string, audience string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	delete(m.sessions, tokenHash)
+	if sess, ok := m.sessions[tokenHash]; ok && (sess.Audience == audience || (sess.Audience == "" && audience == "public")) {
+		delete(m.sessions, tokenHash)
+	}
 	return nil
 }
 
@@ -168,6 +170,7 @@ type harness struct {
 	e    *echo.Echo
 	idp  *fakeIdP
 	repo *memRepo
+	svc  *Service
 }
 
 func newHarness(t *testing.T) *harness {
@@ -176,15 +179,16 @@ func newHarness(t *testing.T) *harness {
 	repo := newMemRepo()
 	svc := New(Config{
 		ClientID: "client-id", ClientSecret: "secret", Issuer: idp.srv.URL,
-		PublicURL: "http://admin.test", SessionTTL: time.Hour,
+		Origins: map[string]string{"studio": "http://studio.test"}, SessionTTL: time.Hour,
 	}, repo)
 	e := echo.New()
 	svc.Register(e.Group("/api"))
-	return &harness{e: e, idp: idp, repo: repo}
+	return &harness{e: e, idp: idp, repo: repo, svc: svc}
 }
 
 func (h *harness) do(method, target string, cookies []*http.Cookie) *httptest.ResponseRecorder {
 	req := httptest.NewRequest(method, target, nil)
+	req.Host = "studio.test"
 	for _, c := range cookies {
 		req.AddCookie(c)
 	}
@@ -310,12 +314,13 @@ func TestMeWithoutSession(t *testing.T) {
 }
 
 func TestLoginNotConfigured(t *testing.T) {
-	svc := New(Config{PublicURL: "http://admin.test", SessionTTL: time.Hour}, newMemRepo())
+	svc := New(Config{Origins: map[string]string{"studio": "http://studio.test"}, SessionTTL: time.Hour}, newMemRepo())
 	e := echo.New()
 	svc.Register(e.Group("/api"))
 
 	rec := httptest.NewRecorder()
-	e.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/api/auth/google/login", nil))
+	req := httptest.NewRequest(http.MethodGet, "http://studio.test/api/auth/google/login", nil)
+	e.ServeHTTP(rec, req)
 	if got := rec.Header().Get("Location"); got != "/login?error=not_configured" {
 		t.Fatalf("redirect = %q, want /login?error=not_configured", got)
 	}

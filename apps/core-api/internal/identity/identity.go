@@ -38,6 +38,7 @@ type Profile struct {
 }
 
 type Session struct {
+	Audience  string
 	TokenHash string
 	UserID    string
 	CreatedAt time.Time
@@ -49,8 +50,8 @@ type Repo interface {
 	UpsertGoogleUser(ctx context.Context, p Profile, now time.Time) (User, error)
 	CreateSession(ctx context.Context, s Session) error
 	// SessionUser returns the session's user, or ErrNoSession if missing or expired at now.
-	SessionUser(ctx context.Context, tokenHash string, now time.Time) (User, error)
-	DeleteSession(ctx context.Context, tokenHash string) error
+	SessionUser(ctx context.Context, tokenHash string, now time.Time, audience string) (User, error)
+	DeleteSession(ctx context.Context, tokenHash string, audience string) error
 }
 
 // EffectiveRoles keeps reader as the baseline and grants admin only from the current allowlist.
