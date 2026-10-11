@@ -91,13 +91,21 @@ cmd_changelog() {
 	[ -f "$notes" ] || fail "notes file not found: $notes"
 	[ -f CHANGELOG.md ] || printf '# Changelog\n' >CHANGELOG.md
 	grep -q "^## v$version " CHANGELOG.md && fail "CHANGELOG.md already has v$version"
-	# A hand-written "## Unreleased" section (a subtitle after the word is fine) is folded into the new
-	# version: its body goes first, and its heading disappears. Without one nothing changes.
+	# A hand-written "## Unreleased" section is folded into the new version: its body goes first and its
+	# heading disappears. A subtitle after the word ("## Unreleased — 세 공간 분리") stays as a "### "
+	# heading over that body, so the milestone name reaches the release notes. Without one nothing changes.
 	unreleased=$(awk '
-		/^## Unreleased([[:space:]]|$)/ { found = 1; next }
+		/^## Unreleased([[:space:]:]|$)/ {
+			found = 1
+			sub(/^## Unreleased[[:space:]]*/, "")
+			# "— 부제", "– 부제", "- 부제" and ": 부제" all leave just the subtitle.
+			sub(/^(—|–|-|:)[[:space:]]*/, "")
+			if ($0 != "") { print "### " $0; print "" }
+			next
+		}
 		found && /^## / { exit }
 		found { print }
-	' CHANGELOG.md | sed -e '/./,$!d')
+	' CHANGELOG.md | cat -s | sed -e '/./,$!d')
 	# GitHub's notes: drop the generator comment and "What's Changed", nest the rest under the version.
 	section=$(
 		printf '## v%s — %s\n\n' "$version" "$(TZ=Asia/Seoul date +%Y-%m-%d)"
@@ -108,7 +116,7 @@ cmd_changelog() {
 	# Insert before the first existing version section, after the file header (or at the end).
 	# (ENVIRON, not -v: awk would interpret backslashes in the notes.)
 	SECTION="$section" awk '
-		/^## Unreleased([[:space:]]|$)/ { skip = 1; next }
+		/^## Unreleased([[:space:]:]|$)/ { skip = 1; next }
 		skip && /^## / { skip = 0 }
 		skip { next }
 		!done && /^## v/ { print ENVIRON["SECTION"]; print ""; done = 1 }
