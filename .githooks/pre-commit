@@ -52,6 +52,11 @@ if printf '%s\n' "$staged" | grep -qE '^(apps/[^/]+-web/|packages/|package(-lock
  fi
 fi
 
+if printf '%s\n' "$staged" | grep -qE '^(scripts/release|scripts/test-release|CHANGELOG\.md)$'; then
+	echo "pre-commit: release tooling or CHANGELOG changed → scripts/test-release"
+	scripts/test-release || fail "release script checks failed"
+fi
+
 if [ "${SKIP_E2E:-0}" = "1" ]; then
 	echo "pre-commit: SKIP_E2E=1 — skipping e2e."
 	exit 0
