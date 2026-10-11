@@ -76,7 +76,7 @@ jobs:
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          npm version "$VERSION" --workspace @novelity/studio-web --no-git-tag-version --allow-same-version
+          npm version "$VERSION" --workspace @novelity/studio-web --workspace @novelity/bookstore-web --no-git-tag-version --allow-same-version
           scripts/release changelog "$VERSION" "$RUNNER_TEMP/notes.md"
           git diff --stat
 
@@ -87,7 +87,7 @@ jobs:
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git switch -c "release/v$VERSION"
-          git add apps/studio-web/package.json package-lock.json CHANGELOG.md
+          git add apps/studio-web/package.json apps/bookstore-web/package.json package-lock.json CHANGELOG.md
           git commit -m "[structural] 릴리스 v$VERSION: 버전·CHANGELOG"
           git push origin "release/v$VERSION"
 

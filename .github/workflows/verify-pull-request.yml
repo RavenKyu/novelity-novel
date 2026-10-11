@@ -109,5 +109,8 @@ jobs:
       - name: API client tests
         run: npm test --workspace @novelity/api-client
 
+      - name: Bookstore server transport tests
+        run: npm test --workspace @novelity/bookstore-web
+
       - name: Build
         run: npm run build

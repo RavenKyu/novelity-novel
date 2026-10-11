@@ -4,7 +4,7 @@
 # Modeled on aplus-dev-studio-desktop's hook. The full suite belongs to CI
 # (.github/workflows/verify-pull-request.yml); locally we keep commits fast:
 #   - apps/core-api staged → go vet + go test (Mongo tests need MONGO_TEST_URI, skipped otherwise)
-#   - web apps/shared packages staged → workspace type checks + lint
+#   - studio/bookstore web or shared packages staged → workspace type checks + lint
 #   - e2e                  → only staged tests/e2e/*.spec.ts plus E2E_SPEC_FILES, never the whole suite,
 #                            against the running app (npm run dev)
 #
@@ -41,6 +41,9 @@ if printf '%s\n' "$staged" | grep -qE '^(apps/[^/]+-web/|packages/|package(-lock
  echo "pre-commit: web workspace changed → type checks, prettier"
  npm run --silent check || fail "workspace type checks failed"
  npm run --silent lint || fail "workspace format checks failed"
+ if printf '%s\n' "$staged" | grep -qE '^(apps/bookstore-web/|packages/|package(-lock)?\.json$)'; then
+  npm test --workspace @novelity/bookstore-web || fail "bookstore transport tests failed"
+ fi
 fi
 
 if [ "${SKIP_E2E:-0}" = "1" ]; then

@@ -4,23 +4,24 @@
 
 ## 시스템 개요
 
-Novelity는 작가 공간, 독자 서점, 시스템 관리자 공간으로 나뉜다. 웹은 독립 앱 세 개를 지향하며 API는 도메인별 모듈을 가진 core-api 하나다. 현재 작가 앱과 공통 기반이 구현되었고 서점·관리자 앱은 nn-aa6i·nn-w097에서 만든다. 공간·도메인·세션 결정은 [ADR-002](adr/002-spaces-identity-sessions.md)에 있다.
+Novelity는 작가 공간, 독자 서점, 시스템 관리자 공간으로 나뉜다. 웹은 독립 앱 세 개를 지향하며 API는 도메인별 모듈을 가진 core-api 하나다. 현재 작가 앱·SSR 서점 골격과 공통 기반이 구현되었고 관리자 앱은 nn-w097에서 만든다. 공간·도메인·세션 결정은 [ADR-002](adr/002-spaces-identity-sessions.md)에 있다.
 
 | 공간 | 운영 출처 | 웹 | 렌더링 | API |
 |------|-----------|----|--------|-----|
 | 작가 | https://studio.novelity.kr | apps/studio-web | SPA, adapter-static | /api/studio |
-| 독자 서점 | https://novelity.kr | apps/bookstore-web (후속 골격) | SSR, adapter-node | /api/store |
+| 독자 서점 | https://novelity.kr | apps/bookstore-web | SSR, adapter-node | /api/store |
 | 관리자 | https://admin.novelity.kr | apps/admin-web (후속 골격) | SPA, adapter-static | /api/admin |
 
-개발 중에는 MongoDB만 컨테이너로 띄우고 core-api와 작가 웹은 호스트에서 live reload로 실행한다. compose `app` 프로필은 공개 인스턴스(core-api + studio-web)를 띄운다.
+개발 중에는 MongoDB만 컨테이너로 띄우고 core-api·작가 웹·서점 웹은 호스트에서 live reload로 실행한다. compose `app` 프로필은 공개 인스턴스(core-api + studio-web + bookstore-web)를 띄운다.
 
 - `nn-studio-web-server`: nginx가 SPA를 서빙하고 /api 요청을 core-api로 프록시한다. /api/admin 요청은 404로 막는다.
+- `nn-bookstore-web-server`: adapter-node가 SSR과 클라이언트 자산을 서빙하고 공개 /api 요청을 core-api로 프록시한다. /api/admin·/api/studio는 404로 막는다.
 - `nn-core-api-server`: Go·Echo v5 API. compose 내부망에만 노출하며 studio,store만 등록한다. admin 라우트가 없는 것이 기본값이다.
 - `nn-mongodb`: MongoDB 8.0. 사용자·세션을 저장한다. 호스트에는 127.0.0.1:27017로만 노출한다.
 
 관리자는 동일 바이너리를 `--surfaces=admin`으로 별도 실행하고 내부망에 배치한다. 공개·관리자 그룹을 함께 선택하면 기동을 거절한다. 관리자 웹·compose 인스턴스와 실제 접근 제한은 nn-w097에서 구현한다. /api/auth와 /api/healthz는 어느 인스턴스에서도 공통으로 등록한다.
 
-브라우저는 자기 웹의 /api 프록시로 같은 출처 요청을 한다. 서점 SSR의 신뢰한 API 대상에 대한 쿠키 전달은 nn-aa6i에서 구현한다.
+브라우저는 자기 웹의 /api 프록시로 같은 출처 요청을 한다. 서점은 서버 전용 전송 함수를 통해 CORE_API_URL로 직접 연결한다. 요청 Host나 URL로 API 대상을 선택하지 않으며 nn_session·nn_oauth만 전달한다. Node HTTP 전송은 구성된 BOOKSTORE_URL의 Host를 보존하고 TLS 연결은 API 대상에 맞춘다. 리디렉션을 따라가지 않고 OAuth Location·여러 Set-Cookie를 브라우저에 돌려준다. Origin·Referer·Fetch Metadata도 보존해 API의 상태 변경 검증을 유지한다.
 
 ## 모듈 구조와 경계
 
@@ -30,19 +31,21 @@ Novelity는 작가 공간, 독자 서점, 시스템 관리자 공간으로 나�
 | HTTP 조립 | Echo와 미들웨어, 선택한 그룹 등록 | apps/core-api/internal/server |
 | identity | User·Profile·Session·Repo 계약, 유효 역할 계산 | apps/core-api/internal/identity |
 | auth HTTP | Google code flow, 출처·returnTo 검증, 세션 쿠키·권한 미들웨어 | apps/core-api/internal/http/auth |
-| 공간별 HTTP | studio: 세션 필수, store: 공개, admin: 관리자 세션·역할 필수 | apps/core-api/internal/http/{studio,store,admin} |
+| 공간별 HTTP | studio: 세션 필수, store: 선택적 공개 세션, admin: 관리자 세션·역할 필수 | apps/core-api/internal/http/{studio,store,admin} |
+| catalog | 공개 스냅샷 도메인 경계 (저장·발행 구현은 후속 기능) | apps/core-api/internal/catalog |
 | 플랫폼 | 환경변수·선택 검증, Mongo 연결·인덱스·identity.Repo 구현 | apps/core-api/internal/platform/{config,mongo} |
 | 공통 health | Mongo ping, 정상 200·불통 503 | apps/core-api/internal/handler |
 | 작가 라우트 | 페이지, /login과 인증 가드, 앱별 세션 상태 | apps/studio-web/src/routes, src/lib/auth.svelte.ts |
+| 서점 라우트·서빙 | SSR 홈·OG·로그인·요청별 세션, 공개 API 프록시, 자체 화면 틀 | apps/bookstore-web/src/routes, src/hooks.server.ts, src/lib/server |
 | 공통 UI | 디자인 토큰, Header·PageContent·Sidebar·SidebarItem·UserMenu | packages/ui |
 | API 클라이언트 | User·Role 타입, me·logout·health fetch 래퍼, 로그인 링크 | packages/api-client |
 | 작가 서빙 | SPA fallback, /api 프록시 | apps/studio-web/nginx.conf |
 | 오케스트레이션 | 공개 인스턴스와 Mongo, opt-in app 프로필 | docker-compose.yml |
-| 개발 실행 | Mongo(compose), API(air), 작가 웹(vite) | scripts/dev, apps/core-api/.air.toml |
+| 개발 실행 | Mongo(compose), API(air), 작가·서점 웹(vite) | scripts/dev, apps/core-api/.air.toml |
 | 검증 | 경로별 pre-commit, PR 검증·e2e·이미지 빌드 | .githooks, .github/workflows, tests/e2e |
 | 릴리스 | 단일 버전·CHANGELOG·릴리스 PR·태그·develop 동기화 | scripts/release, .github/workflows/{prepare,publish}-release.yml |
 
-각 공간에는 연결 확인용 GET /api/<surface>/healthz가 있다. 작품·카탈로그·관리 기능의 실제 엔드포인트는 후속 기능에서 추가한다. store의 선택적 세션과 catalog 패키지는 서점 골격 에픽의 범위다.
+각 공간에는 연결 확인용 GET /api/<surface>/healthz가 있다. 작품·카탈로그·관리 기능의 실제 엔드포인트는 후속 기능에서 추가한다. store에는 OptionalSession이 붙어 쿠키가 없거나 세션이 만료되면 익명으로 통과하고, 유효한 public audience 세션만 사용자로 붙인다. 저장소 오류는 실패 응답으로 구분한다. GET /api/store/session은 `{user: null}` 또는 현재 사용자를 반환한다. 서점은 API 장애에도 공개 홈을 표시하고 로그인 상태 확인 불가를 알린다. 개인별 헤더를 담는 SSR HTML·데이터와 세션 API 응답은 private, no-store다.
 
 공통 UI는 앱의 `$app`·`$lib`나 세션 상태를 참조하지 않는다. Sidebar는 제목·버전·경로·메뉴·사용자 메뉴 snippet을, UserMenu는 사용자·로그아웃 함수를 받는다. 서점은 토큰과 기본 컴포넌트를 쓰되 Sidebar·Header 화면 틀은 사용하지 않는다. UI는 flowbite-svelte·아이콘과 Tailwind v4를 사용한다([STYLE](STYLE.md)).
 
@@ -50,7 +53,7 @@ Novelity는 작가 공간, 독자 서점, 시스템 관리자 공간으로 나�
 
 - `cmd/server` → `server` → `http/{auth,studio,store,admin}` → `identity`.
 - `platform/mongo` → `identity.Repo`. identity는 HTTP·Echo·Mongo 구현을 모른다. config는 진입점에서 읽는다.
-- 향후 `studio` → `catalog`: 발행 시 공개 스냅샷을 넘긴다. catalog는 작가의 편집 중 원고를 직접 참조하지 않는다. library·moderation도 도메인 계층에 추가한다.
+- 향후 `studio` → `catalog`: 연재 회차 또는 책 한 권을 발행할 때 공개 스냅샷을 넘긴다. 원고와 공개본은 서로 다른 컬렉션에 둔다. catalog는 작가의 편집 중 원고를 직접 참조하지 않는다. 서점 독자는 웹 뷰어로 읽으며 PDF·EPUB은 작업실의 결과물이다. 현재는 도메인 경계와 연재·책 안내 자리 화면만 있고 작품 목록·뷰어·발행·결제는 구현하지 않았다. library·moderation도 도메인 계층에 추가한다.
 - 웹 → `packages/{ui,api-client}`. ui는 api-client의 User 타입만 참조하고 API 요청은 앱이 소유한다. 웹 → core-api 통신은 HTTP만 사용한다.
 
 ## 인증·역할·세션
@@ -81,4 +84,4 @@ MongoDB `novelity` DB. 시작 시 EnsureIndexes로 인덱스를 멱등 생성한
 - [ADR-001](adr/001-google-oidc-mongo-sessions.md) Google OIDC 로그인과 MongoDB 서버 세션
 - [ADR-002](adr/002-spaces-identity-sessions.md) 세 공간과 identity·역할·세션 경계
 
-Decided in: nn-l4cg
+Decided in: nn-l4cg, nn-aa6i

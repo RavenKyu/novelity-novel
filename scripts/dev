@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# Local development: MongoDB in docker compose, core-api and studio-web as host processes
+# Local development: MongoDB in compose, core-api, studio-web and bookstore-web on the host
 # that reload on file changes.
-#   scripts/dev       both, one terminal (prefixed output, Ctrl-C stops both)
+#   scripts/dev       all three, one terminal (Ctrl-C stops them together)
 #   scripts/dev api   core-api only: air rebuilds and restarts it on *.go changes (:8080)
 #   scripts/dev studio   studio only: vite dev server with HMR (:${WEB_PORT:-8000}, /api → :8080)
+#   scripts/dev bookstore   SSR store only (:${BOOKSTORE_PORT:-8001}, API → CORE_API_URL)
 # Needs Docker, Go (brew install go) and Node. Reads .env from the repo root.
 set -euo pipefail
 
@@ -19,6 +20,9 @@ if [ -f .env ]; then
 fi
 # core-api runs on the host, so it reaches MongoDB through the published port.
 export MONGO_URI="${MONGO_URI:-mongodb://${MONGO_ROOT_USER:-novelity}:${MONGO_ROOT_PASSWORD:-novelity-dev}@localhost:${MONGO_PORT:-27017}/?authSource=admin}"
+export STUDIO_URL="${STUDIO_URL:-http://localhost:${WEB_PORT:-8000}}"
+export BOOKSTORE_URL="${BOOKSTORE_URL:-http://localhost:${BOOKSTORE_PORT:-8001}}"
+export CORE_API_URL="${CORE_API_URL:-http://localhost:8080}"
 
 fail() {
 	echo "dev: $1" >&2
@@ -42,11 +46,16 @@ studio | web)
 	;;
 all)
 	[ -x node_modules/.bin/concurrently ] || fail "node_modules missing — run: npm ci"
-	exec node_modules/.bin/concurrently --kill-others --names api,studio --prefix-colors blue,magenta \
-		"scripts/dev api" "scripts/dev studio"
+	exec node_modules/.bin/concurrently --kill-others --names api,studio,bookstore --prefix-colors blue,magenta,green \
+		"scripts/dev api" "scripts/dev studio" "scripts/dev bookstore"
+	;;
+bookstore)
+	[ -x node_modules/.bin/vite ] || fail "workspace dependencies missing — run: npm ci"
+	cd apps/bookstore-web
+	exec npm run dev
 	;;
 *)
-	echo "usage: scripts/dev [api|studio]" >&2
+	echo "usage: scripts/dev [api|studio|bookstore]" >&2
 	exit 2
 	;;
 esac
