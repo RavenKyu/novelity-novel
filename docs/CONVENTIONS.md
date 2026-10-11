@@ -1,6 +1,6 @@
 # Conventions
 
-> 마지막 갱신: 2026-10-11
+> 마지막 갱신: 2026-10-12
 
 ## 명령어
 
@@ -58,6 +58,7 @@ core-api 명령은 `scripts/go`로 실행한다. 로컬에 `go`가 있으면 그
 - **서점 e2e:** `tests/e2e/bookstore.spec.ts`는 JavaScript 없는 SSR·OG, 공개/유효/만료 세션, CSRF 거절, 로그아웃과 로그인 실패 복귀를 확인한다. `E2E_BOOKSTORE_URL`의 기본값은 http://localhost:${BOOKSTORE_PORT:-8001}이며, studio는 기존 E2E_BASE_URL을 쓴다. 로컬 쿠키는 포트를 구분하지 않으므로 두 앱을 같은 localhost로 실행한다. 기본 CI는 Google 자격증명이 비어 있는 스택을 사용한다.
 - **관리자 검증:** `npm test --workspace @novelity/admin-web`는 Mongo·Google 없이 API mock으로 역할·로그인·로그아웃·만료 가드를 검사한다. 실제 배포 경계는 `tests/e2e/admin.spec.ts`가 공개 admin 404, public 토큰 거절, reader 403, admin 200, 관리자 로그아웃의 공개 세션 보존을 검사한다. 관리자 스택과 ADMIN_EMAILS=e2e-admin@example.com이 필요하다. 다른 테스트 이메일을 쓰면 E2E_ADMIN_EMAIL도 맞춘다. E2E_ADMIN_URL 기본값은 http://localhost:${ADMIN_PORT:-8002}다.
 - **e2e 세션:** 실제 Google 로그인은 자동화할 수 없다. 그래서 `tests/e2e/fixtures.ts`의 `user` fixture가 Mongo에 사용자와 세션을 직접 넣고 쿠키를 설정한다. googleSub는 `e2e-…` 형식이고 테스트가 끝나면 삭제한다.
+- **사람이 직접 확인:** 실제 Google 로그인, 화면 배치, `npm run dev` 기동처럼 자동 검사가 닿지 않는 것은 [브랜치를 로컬에서 직접 확인하기](local-check.md)를 따른다. 마일스톤 브랜치를 develop에 넣기 전에 한 번 한다.
 
 ## CI (GitHub Actions)
 

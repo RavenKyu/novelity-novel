@@ -23,7 +23,8 @@ export default defineConfig({
 		// Same origin as the web container, so STUDIO_URL and the Google redirect URI stay valid.
 		port: Number(process.env.WEB_PORT) || 8000,
 		strictPort: true,
-		// Local dev: forward API calls to core-api (nginx does this in containers).
-		proxy: { '/api': 'http://localhost:8080' }
+		// Local dev: forward API calls to core-api (nginx does this in containers). Keep the
+		// browser's Host: core-api picks the space from it, and the string shorthand rewrites it.
+		proxy: { '/api': { target: 'http://localhost:8080', changeOrigin: false } }
 	}
 });
