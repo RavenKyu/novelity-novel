@@ -13,7 +13,8 @@
 		"check": "npm run check --workspaces --if-present",
 		"lint": "npm run lint --workspaces --if-present",
 		"build": "npm run build --workspaces --if-present",
-		"dev:studio": "scripts/dev studio"
+		"dev:studio": "scripts/dev studio",
+		"dev:bookstore": "scripts/dev bookstore"
 	},
 	"devDependencies": {
 		"@playwright/test": "1.63.0",

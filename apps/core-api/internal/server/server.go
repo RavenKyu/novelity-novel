@@ -51,7 +51,11 @@ func New(d Deps) *echo.Echo {
 			}
 			studio.Register(group)
 		case "store":
-			store.Register(api.Group("/store"))
+			group := api.Group("/store")
+			if d.Auth != nil {
+				group.Use(d.Auth.OptionalSession, d.Auth.SameOrigin)
+			}
+			store.Register(group)
 		case "admin":
 			group := api.Group("/admin", require, auth.RequireRole(identity.Admin))
 			if d.Auth != nil {

@@ -59,5 +59,27 @@ services:
       - nn-core-api-server
     restart: unless-stopped
 
+  nn-bookstore-web-server:
+    profiles: [app]
+    build:
+      context: .
+      dockerfile: apps/bookstore-web/Dockerfile
+    image: nn-bookstore-web-server:local
+    environment:
+      CORE_API_URL: http://nn-core-api-server:8080
+      BOOKSTORE_URL: ${BOOKSTORE_URL:-http://localhost:8001}
+      STUDIO_URL: ${STUDIO_URL:-http://localhost:8000}
+      ORIGIN: ${BOOKSTORE_URL:-http://localhost:8001}
+    ports:
+      - "${BOOKSTORE_PORT:-8001}:3000"
+    depends_on:
+      - nn-core-api-server
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+    restart: unless-stopped
+
 volumes:
   mongo-data:

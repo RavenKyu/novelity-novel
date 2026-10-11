@@ -286,7 +286,7 @@ func (s *Service) RequireSession(next echo.HandlerFunc) echo.HandlerFunc {
 	}
 }
 
-// CurrentUser returns the user RequireSession attached to c.
+// CurrentUser returns the user RequireSession or OptionalSession attached to c.
 func CurrentUser(c *echo.Context) identity.User {
 	u, _ := c.Get(userKey).(identity.User)
 	return u
