@@ -12,9 +12,9 @@ core-api 명령은 `scripts/go`로 실행한다. 로컬에 `go`가 있으면 그
 | 관련 테스트 | `cd apps/core-api && ../../scripts/go test ./internal/<pkg>/...` |
 | 린트·포맷 | `cd apps/core-api && ../../scripts/go vet ./... && ../../scripts/go fmt ./...` · `npm run lint` (수정: `npm run format --workspace @novelity/studio-web`, 공통 패키지는 `npm exec -- prettier --write packages`) |
 | 타입 검사 | `npm run check` |
-| 빌드 | `npm run build` · `docker compose --profile app build` |
+| 빌드 | `npm run build` · `docker compose --profile app --profile admin build` (admin-web 이미지는 admin 프로필에서만 빌드된다) |
 | 개발 실행 | 최초 1회 `brew install go`, `cp .env.example .env` 후 값 입력, 루트에서 `npm ci` → `npm run dev` → http://localhost:8000 (`WEB_PORT`로 변경). 서점은 http://localhost:8001 (`BOOKSTORE_PORT`로 변경), 관리자는 http://localhost:8002 (`ADMIN_PORT`로 변경). 따로 띄우려면 `npm run dev:api` / `npm run dev:studio` / `npm run dev:bookstore` / `npm run dev:admin-api` / `npm run dev:admin` |
-| 컨테이너 실행 | `docker compose --profile app up -d --build` (공개 운영 유사 구성. 관리자도 띄우려면 `--profile admin`을 함께 지정한다. 개발 서버와 8000·8001 포트를 같이 쓰므로 동시에 띄우지 않는다) |
+| 컨테이너 실행 | `docker compose --profile app up -d --build` (공개 운영 유사 구성. 관리자도 띄우려면 `--profile admin`을 함께 지정한다. 개발 서버와 8000·8001(관리자 프로필은 8002) 포트를 같이 쓰므로 동시에 띄우지 않는다) |
 | e2e (Playwright) | 최초 1회 `npm ci && npm run test:e2e:install` → 앱 실행(`npm run dev`) 후 `npm run test:e2e` (관련 spec만: `npx playwright test --config tests/e2e/playwright.config.ts tests/e2e/<name>.spec.ts`) |
 | 워크플로 린트 | `docker run --rm -v "$PWD":/repo -w /repo rhysd/actionlint:1.7.7` |
 | 스모크 | `curl -s localhost:8000/api/healthz` → `{"status":"ok"}` (Mongo 불통 시 503) |
@@ -89,7 +89,7 @@ core-api 명령은 `scripts/go`로 실행한다. 로컬에 `go`가 있으면 그
    | `release` | — | 제외(릴리스·동기화 PR 전용) |
 
 2. Actions → **Prepare release** → Run workflow(`auto` 또는 patch·minor·major). 지난 태그 이후 develop을 기준으로 `release/vX.Y.Z` 브랜치와 main 대상 릴리스 PR이 만들어진다. 태그가 없으면 첫 릴리스는 `apps/studio-web/package.json`의 버전이다.
-3. 릴리스 PR에서 버전과 CHANGELOG를 확인한다. 고칠 내용은 그 release 브랜치에 push한다.
+3. 릴리스 PR에서 버전과 CHANGELOG를 확인한다. 릴리스 사이에 손으로 쓴 항목은 `CHANGELOG.md`의 `## Unreleased`(뒤에 ` — 부제`를 붙여도 된다) 절에 둔다. Prepare release가 그 본문을 새 버전 절 맨 위로 옮기고 Unreleased 제목은 지우므로 GitHub Release 본문에도 들어간다(`scripts/test-release`가 확인하며 pre-commit과 PR 검증이 돌린다). 고칠 내용은 그 release 브랜치에 push한다.
 4. 릴리스 PR을 **merge commit**으로 병합한다(squash·rebase 금지). 그러면 publish-release가 태그와 GitHub Release를 만들고, 이미지 빌드를 실행하고, main → develop 동기화 PR을 연다. 동기화 PR은 검사가 통과하면 자동 병합된다.
 
 - Action이 `GITHUB_TOKEN`으로 만든 PR·push·태그는 다른 워크플로를 실행시키지 않는다. 그래서 검증·e2e·이미지 빌드는 workflow_dispatch로 직접 실행한다.

@@ -27,6 +27,29 @@ func TestOriginValidation(t *testing.T) {
 	}
 }
 
+func TestDuplicateOriginHostsRejected(t *testing.T) {
+	cfg := Config{Origins: map[string]string{"studio": "http://localhost:8000", "store": "http://localhost:8000"}}
+	if err := cfg.Validate([]string{"studio", "store"}); err == nil {
+		t.Fatal("accepted two surfaces on the same host and port")
+	}
+	for _, store := range []string{"http://LOCALHOST:8000"} {
+		cfg.Origins["store"] = store
+		if err := cfg.Validate([]string{"studio", "store"}); err == nil {
+			t.Fatalf("accepted duplicate host %s", store)
+		}
+	}
+	for _, pair := range [][2]string{{"http://studio.test", "http://studio.test:80"}, {"https://studio.test:443", "https://STUDIO.test"}} {
+		cfg.Origins["studio"], cfg.Origins["store"] = pair[0], pair[1]
+		if err := cfg.Validate([]string{"studio", "store"}); err == nil {
+			t.Fatalf("accepted duplicate host %v", pair)
+		}
+	}
+	cfg.Origins["studio"], cfg.Origins["store"] = "http://localhost:8000", "http://localhost:8001"
+	if err := cfg.Validate([]string{"studio", "store"}); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestListenerAddress(t *testing.T) {
 	t.Setenv("PORT", "8081")
 	t.Setenv("BIND_HOST", "127.0.0.1")

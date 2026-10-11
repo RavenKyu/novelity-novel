@@ -9,6 +9,8 @@
 #       Without any tag, the first release is the version in apps/studio-web/package.json.
 #   scripts/release changelog <X.Y.Z> <notes.md>
 #       Prepend a "## vX.Y.Z — date (KST)" section built from GitHub's generated notes to CHANGELOG.md.
+#       A hand-written "## Unreleased" section (a subtitle after the word is allowed) is folded into
+#       that section, its body first, and removed; without one the file is only prepended to.
 #   scripts/release notes <X.Y.Z>
 #       Print that version's CHANGELOG.md section (the GitHub Release body).
 set -euo pipefail
@@ -85,22 +87,33 @@ cmd_version() {
 }
 
 cmd_changelog() {
-	local version="$1" notes="$2" section
+	local version="$1" notes="$2" section unreleased
 	[ -f "$notes" ] || fail "notes file not found: $notes"
+	[ -f CHANGELOG.md ] || printf '# Changelog\n' >CHANGELOG.md
+	grep -q "^## v$version " CHANGELOG.md && fail "CHANGELOG.md already has v$version"
+	# A hand-written "## Unreleased" section (a subtitle after the word is fine) is folded into the new
+	# version: its body goes first, and its heading disappears. Without one nothing changes.
+	unreleased=$(awk '
+		/^## Unreleased([[:space:]]|$)/ { found = 1; next }
+		found && /^## / { exit }
+		found { print }
+	' CHANGELOG.md | sed -e '/./,$!d')
 	# GitHub's notes: drop the generator comment and "What's Changed", nest the rest under the version.
 	section=$(
 		printf '## v%s — %s\n\n' "$version" "$(TZ=Asia/Seoul date +%Y-%m-%d)"
+		if [ -n "$unreleased" ]; then printf '%s\n\n' "$unreleased"; fi
 		sed -e '/^<!-- Release notes generated/d' -e "/^## What's Changed/d" -e 's/^## /### /' "$notes" |
 			cat -s | sed -e '/./,$!d'
 	)
-	[ -f CHANGELOG.md ] || printf '# Changelog\n' >CHANGELOG.md
-	grep -q "^## v$version " CHANGELOG.md && fail "CHANGELOG.md already has v$version"
-	# Insert before the first existing version section, after the file header.
+	# Insert before the first existing version section, after the file header (or at the end).
 	# (ENVIRON, not -v: awk would interpret backslashes in the notes.)
 	SECTION="$section" awk '
+		/^## Unreleased([[:space:]]|$)/ { skip = 1; next }
+		skip && /^## / { skip = 0 }
+		skip { next }
 		!done && /^## v/ { print ENVIRON["SECTION"]; print ""; done = 1 }
-		{ print }
-		END { if (!done) { print ""; print ENVIRON["SECTION"] } }
+		{ print; last = $0 }
+		END { if (!done) { if (last != "") print ""; print ENVIRON["SECTION"] } }
 	' CHANGELOG.md >CHANGELOG.md.tmp
 	mv CHANGELOG.md.tmp CHANGELOG.md
 }
