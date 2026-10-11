@@ -63,3 +63,5 @@
 {"ts":"2026-10-11T15:34:37Z","id":"nn-pjr4","kind":"note","by":"Raven","by_email":"hong18s@gmail.com","text":"검증: 격리 compose 프로젝트(nn-pjr4-e2e, Mongo 27131)로 npm run dev 다섯 프로세스 13초 기동, 문서의 curl 확인 전부 기대값(healthz ok, 공개 admin 404, 인코딩 공백 302, //evil.test 400, 로그인 302 not_configured), e2e 16 passed + 1 flaky(서점 로그아웃, 첫 컴파일 지연 추정), 같은 spec --repeat-each=5 --retries=0 15/15. 사용자 개발용 Mongo는 건드리지 않음. 병합 b9e313e"}
 {"ts":"2026-10-11T15:34:37Z","id":"nn-pjr4.4u8","kind":"status","by":"Raven","by_email":"hong18s@gmail.com","from":"in_progress","to":"done","note":"병합 b9e313e에 포함"}
 {"ts":"2026-10-11T15:34:37Z","id":"nn-pjr4","kind":"status","by":"Raven","by_email":"hong18s@gmail.com","from":"in_progress","to":"done","note":"docs/local-check.md, CONVENTIONS 링크. 병합 b9e313e"}
+{"ts":"2026-10-11T15:52:05Z","id":"nn-3l3y","kind":"create","by":"Raven","by_email":"hong18s@gmail.com","title":"release: Unreleased 부제를 버전 절 소제목으로 남기기"}
+{"ts":"2026-10-11T15:52:06Z","id":"nn-3l3y","kind":"status","by":"Raven","by_email":"hong18s@gmail.com","from":"todo","to":"in_progress"}
