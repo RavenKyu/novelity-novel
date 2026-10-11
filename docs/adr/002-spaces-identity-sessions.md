@@ -25,7 +25,7 @@
 
 core-api는 identity, studio, catalog, library, moderation 도메인으로 나누는 모듈형 모놀리스다. HTTP 어댑터가 도메인에 의존하며 도메인은 HTTP·Echo를 모른다. Mongo 연결·설정은 internal/platform에 둔다. studio는 catalog에 발행 스냅샷을 전달하며 catalog는 비공개 작가 원고를 읽지 않는다. 발행·작품 기능 자체는 후속 에픽의 일이다.
 
-/api/studio, /api/store, /api/admin 그룹은 각각 인증·권한 정책을 갖는다. /api/auth와 /api/healthz는 공통이다. 실행 설정 --surfaces 또는 API_SURFACES로 켤 그룹을 고른다. 기본 공개 인스턴스는 studio,store만 켜며 /api/admin은 404다. 관리자 인스턴스는 admin만 켜고 내부망에 따로 배치한다. 실제 VPN·IP 허용 목록과 관리자 배포는 nn-w097에서 정한다.
+/api/studio, /api/store, /api/admin 그룹은 각각 인증·권한 정책을 갖는다. /api/auth와 /api/healthz는 공통이다. 실행 설정 --surfaces 또는 API_SURFACES로 켤 그룹을 고른다. 기본 공개 인스턴스는 studio,store만 켜며 /api/admin은 404다. 관리자 인스턴스는 admin만 켜고 내부망에 따로 배치한다. nn-w097에서 관리자 전용 compose 네트워크와 loopback 웹 진입점을 구현했다. 실제 VPN·IP 허용 목록과 TLS 내부 게이트웨이는 배포 환경 확정 후 정한다.
 
 ### 역할
 
@@ -56,8 +56,8 @@ returnTo는 상대 경로 또는 현재 인스턴스가 제공하는 공간의 �
 
 ## Consequences
 
-웹 배포와 API 권한 경계를 독립적으로 확장한다. 관리자는 라우트 노출, 세션 audience, 역할의 세 경계로 분리한다. 운영에는 세 도메인·TLS·Google callback 등록과 신뢰한 하위 도메인 관리가 필요하다. 내부망 관리자 접근 정책은 관리자 골격 에픽에서 완성한다. 로그인 중 프로세스가 재시작되면 프로세스별 흐름 서명 키가 바뀌어 다시 로그인해야 한다.
+웹 배포와 API 권한 경계를 독립적으로 확장한다. 관리자는 라우트 노출, 세션 audience, 역할의 세 경계로 분리한다. 운영에는 세 도메인·TLS·Google callback 등록과 신뢰한 하위 도메인 관리가 필요하다. 관리자 compose는 admin-only API를 host port 없이 두고 웹만 loopback으로 공개한다. 운영 내부망 VPN·IP 정책은 배포 환경이 정해진 뒤 완성한다. 로그인 중 프로세스가 재시작되면 프로세스별 흐름 서명 키가 바뀌어 다시 로그인해야 한다.
 
 재검토 조건은 신뢰하지 않는 하위 도메인 도입, 외부 API 소비자 도입, 다중 API 복제본에서 로그인 흐름 공유 필요, 관리자 MFA·세션 정책 변경, 도메인 간 독립 배포가 모놀리스보다 유리해지는 때다.
 
-Decided in: nn-l4cg
+Decided in: nn-l4cg, nn-w097
