@@ -61,7 +61,7 @@ Google OIDC 서버 측 code flow는 state·nonce·PKCE를 유지하고 검증된
 
 로그인 흐름은 host-only `nn_oauth`(관리자는 `nn_admin_oauth`)에 담고 프로세스별 HMAC 키로 무결성을 보호한다. 만료는 10분이며 returnTo·시작 출처·state·nonce·PKCE verifier가 함께 묶인다. 복귀 주소는 최대 2048바이트이고 최종 흐름 쿠키도 4096바이트 이하만 허용한다. 시작 출처가 다른 콜백이나 변조·만료된 쿠키는 거절한다. 재시작 또는 복제본 변경 중인 로그인은 다시 시작해야 한다. 이미 로그인된 세션의 공간 복귀도 로그인 시작 API에서 같은 출처·audience·역할 검증을 거쳐 바로 이동한다. returnTo는 명시적 허용 출처 또는 안전한 상대 경로만 허용하고 callback에서도 재검증한다. 공개 로그인은 관리자 출처로 복귀할 수 없다.
 
-역할은 reader(기본)·author(작가 기능이 부여)·admin(ADMIN_EMAILS의 현재 이메일 허용 목록)이다. 복수 역할을 허용한다. roles 없는 기존 사용자는 reader로 읽으며 재로그인이 author를 지우지 않는다. 저장된 admin 역할만으로 권한을 얻을 수 없다. 현재 작가 셸은 세션만 요구한다. author 신청·필명과 author 필수 기능은 후속 작가 에픽의 범위다. `RequireRole`은 `RequireSession` 다음에 적용한다.
+역할은 reader(기본)·author(서점에 발행할 자격)·admin(ADMIN_EMAILS의 현재 이메일 허용 목록)이다. 복수 역할을 허용한다. roles 없는 기존 사용자는 reader로 읽으며 재로그인이 author를 지우지 않는다. 저장된 admin 역할만으로 권한을 얻을 수 없다. 작업실 기능(AI 편집자·어시스트, 조판, 집필 도구)은 `RequireSession`으로 로그인만 요구하며 작가 신청이나 author 역할을 요구하지 않는다. 작업실 요금은 예정되어 있지만 지금 설계하지 않으며, 추후 이용 자격 검사는 별도로 추가할 수 있도록 한다. 작가 신청과 필명 프로필은 발행할 때 필요하며 해당 기능이 author를 부여한다. `RequireRole(author)`는 발행 관련 기능에만 `RequireSession` 다음에 적용한다. 신청·필명과 발행 기능은 후속 에픽의 범위다.
 
 쿠키 인증의 상태 변경 요청에는 `SameOrigin`을 적용한다. Origin 또는 Referer가 다른 출처이면 403이며 Fetch Metadata가 cross-site·same-site인 출처 없는 요청도 거절한다. 출처 헤더가 없는 비브라우저 요청은 허용한다.
 

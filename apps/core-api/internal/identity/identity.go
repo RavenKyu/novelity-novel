@@ -12,6 +12,7 @@ type Role string
 
 const (
 	Reader Role = "reader"
+	// Author grants eligibility to publish to the bookstore; studio access requires only a session.
 	Author Role = "author"
 	Admin  Role = "admin"
 )

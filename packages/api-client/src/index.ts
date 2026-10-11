@@ -1,3 +1,5 @@
+// Author means eligibility to publish to the bookstore, granted by the author application
+// and pen-name profile flow. Studio access requires only a session.
 export type Role = "reader" | "author" | "admin";
 export interface User {
   id: string;
